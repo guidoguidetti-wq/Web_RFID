@@ -1,5 +1,7 @@
 # RFID Management System
 
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/guidoguidetti-wq/Web_RFID)
+
 Sistema web di gestione inventario RFID sviluppato con Next.js e PostgreSQL.
 
 ## 🚀 Caratteristiche
@@ -57,6 +59,22 @@ Sistema web di gestione inventario RFID sviluppato con Next.js e PostgreSQL.
    ```
 
 7. Apri [http://localhost:3000](http://localhost:3000) nel browser
+
+## 🌐 Deploy su Vercel
+
+Per pubblicare l'applicazione su Vercel:
+
+1. **Deploy con un click** (più semplice):
+
+   [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/guidoguidetti-wq/Web_RFID)
+
+   Clicca il pulsante sopra e segui le istruzioni
+
+2. **Deploy manuale**:
+
+   Segui la guida completa in [DEPLOYMENT.md](./DEPLOYMENT.md)
+
+⚠️ **IMPORTANTE**: Ricorda di configurare la variabile d'ambiente `DATABASE_URL` nelle impostazioni di Vercel!
 
 ## 📊 Struttura Database
 
