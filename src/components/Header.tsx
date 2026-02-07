@@ -16,7 +16,7 @@ export default function Header() {
   if (pathname === '/login') return null;
 
   return (
-    <header className="bg-white text-black shadow-md transition-all duration-300 h-28 flex items-center justify-between px-6 border-b border-gray-200">
+    <header className="bg-white text-black shadow-md transition-all duration-300 h-40 flex items-center justify-between px-6 border-b border-gray-200">
       {/* Left: Home */}
       <div className="flex items-center w-1/3">
         {pathname !== '/login' && (
