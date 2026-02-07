@@ -26,18 +26,8 @@ const menuItems = [
 export default function MenuPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-gray-100">
-      {/* Header con Logo */}
-      <div className="pt-8 pb-4 flex justify-center">
-        <div className="flex flex-col items-center gap-3">
-          <img src="/RFID_System_Logo.png" alt="RFID System Logo" className="h-20 w-auto drop-shadow-lg" />
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-            RFID Management System
-          </h1>
-        </div>
-      </div>
-
       {/* Grid Menu */}
-      <div className="flex justify-center px-4 pb-8">
+      <div className="flex justify-center px-4 py-8">
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-4 max-w-5xl w-full">
           {menuItems.map((item) => (
             <Link
