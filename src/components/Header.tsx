@@ -27,10 +27,13 @@ export default function Header() {
         )}
       </div>
 
-      {/* Center: Logo */}
+      {/* Center: Logo and Title */}
       <div className="flex justify-center w-1/3">
-        <div className="p-2">
-             <img src="/RFID_System_Logo.png" alt="RFID System Logo" className="h-20 w-auto object-contain" />
+        <div className="flex flex-col items-center gap-3">
+          <img src="/RFID_System_Logo.png" alt="RFID System Logo" className="h-20 w-auto drop-shadow-lg" />
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+            RFID Management System
+          </h1>
         </div>
       </div>
 
