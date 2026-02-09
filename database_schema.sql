@@ -170,5 +170,26 @@ CREATE INDEX idx_inventory_items_inv ON inventory_items(int_inv_id);
 CREATE INDEX idx_inventory_items_epc ON inventory_items(int_epc);
 
 -- =============================================
+-- 11. TABELLA: People
+-- Gestione persone/dipendenti
+-- =============================================
+CREATE TABLE "People" (
+    people_id SERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    role VARCHAR(100),
+    company VARCHAR(255),
+    department VARCHAR(255),
+    image VARCHAR(500),
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Indici per migliorare le performance dei filtri
+CREATE INDEX idx_people_name ON "People"(name);
+CREATE INDEX idx_people_role ON "People"(role);
+CREATE INDEX idx_people_company ON "People"(company);
+CREATE INDEX idx_people_department ON "People"(department);
+
+-- =============================================
 -- Fine dello script
 -- =============================================
