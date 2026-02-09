@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db';
-import { unlink } from 'fs/promises';
-import path from 'path';
+import { del } from '@vercel/blob';
 
 export async function GET(req: NextRequest) {
   try {
@@ -166,13 +165,15 @@ export async function DELETE(req: NextRequest) {
     // Cancella il record dal database
     await query('DELETE FROM "People" WHERE people_id = $1', [id]);
 
-    // Rimuovi il file immagine se esiste
-    const imagePath = personResult.rows[0]?.image;
-    if (imagePath) {
-      const fullPath = path.join(process.cwd(), 'public', imagePath);
-      await unlink(fullPath).catch((err) => {
-        console.warn('Impossibile cancellare immagine:', err.message);
-      });
+    // Rimuovi il file immagine se esiste (da Vercel Blob)
+    const imageUrl = personResult.rows[0]?.image;
+    if (imageUrl && imageUrl.includes('blob.vercel-storage.com')) {
+      try {
+        await del(imageUrl);
+        console.log('✓ Image deleted from Blob:', imageUrl);
+      } catch (err) {
+        console.warn('Unable to delete image from Blob:', err);
+      }
     }
 
     return NextResponse.json({ success: true });

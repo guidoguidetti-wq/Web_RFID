@@ -217,7 +217,7 @@ export default function PeopleTable({
     setIsEditing(true);
     setIsEditModalOpen(true);
     setSelectedFile(null);
-    setImagePreview(person.image ? `/${person.image}` : null);
+    setImagePreview(person.image || null);
   };
 
   const closeModal = () => {
@@ -275,7 +275,7 @@ export default function PeopleTable({
                     <td className="px-6 py-4">
                       {person.image ? (
                         <img
-                          src={`/${person.image}`}
+                          src={person.image}
                           alt={person.name}
                           className="w-12 h-12 rounded-full object-cover"
                         />

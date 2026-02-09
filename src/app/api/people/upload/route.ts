@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { writeFile, unlink } from 'fs/promises';
-import path from 'path';
-import crypto from 'crypto';
+import { put, del } from '@vercel/blob';
 
 export async function POST(req: NextRequest) {
   try {
@@ -38,38 +36,25 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Generazione nome file sicuro con UUID
-    const fileExt = path.extname(file.name);
-    const sanitizedName = crypto.randomUUID() + fileExt;
-    console.log('Generated filename:', sanitizedName);
+    // Generazione nome file unico
+    const timestamp = Date.now();
+    const randomString = Math.random().toString(36).substring(2, 15);
+    const extension = file.name.split('.').pop();
+    const fileName = `people/${timestamp}-${randomString}.${extension}`;
 
-    // Path sicuro per evitare directory traversal
-    const uploadPath = path.join(process.cwd(), 'public', 'people', sanitizedName);
-    console.log('Upload path:', uploadPath);
+    console.log('Uploading to Vercel Blob:', fileName);
 
-    // Verifica che il path sia all'interno della directory consentita
-    const peopleDir = path.join(process.cwd(), 'public', 'people');
-    if (!uploadPath.startsWith(peopleDir)) {
-      console.error('❌ Invalid path');
-      return NextResponse.json(
-        { error: 'Path non valido' },
-        { status: 400 }
-      );
-    }
+    // Upload a Vercel Blob
+    const blob = await put(fileName, file, {
+      access: 'public',
+      addRandomSuffix: false,
+    });
 
-    // Conversione file in buffer e salvataggio
-    console.log('Converting to buffer...');
-    const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
-    console.log('Buffer size:', buffer.length);
+    console.log('✓ File uploaded successfully:', blob.url);
 
-    console.log('Writing file...');
-    await writeFile(uploadPath, buffer);
-    console.log('✓ File written successfully');
-
-    // Ritorna path relativo (senza /public)
+    // Ritorna URL pubblico
     return NextResponse.json({
-      imagePath: `people/${sanitizedName}`,
+      imagePath: blob.url,
       message: 'Immagine caricata con successo'
     });
   } catch (error) {
@@ -84,37 +69,38 @@ export async function POST(req: NextRequest) {
 export async function DELETE(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
-    const imagePath = searchParams.get('path');
+    const imageUrl = searchParams.get('url');
 
-    if (!imagePath) {
+    if (!imageUrl) {
       return NextResponse.json(
-        { error: 'Path immagine mancante' },
+        { error: 'URL immagine mancante' },
         { status: 400 }
       );
     }
 
-    // Validazione path per sicurezza
-    const fullPath = path.join(process.cwd(), 'public', imagePath);
-    const peopleDir = path.join(process.cwd(), 'public', 'people');
-
-    if (!fullPath.startsWith(peopleDir)) {
+    // Verifica che sia un URL Vercel Blob valido
+    if (!imageUrl.includes('blob.vercel-storage.com')) {
       return NextResponse.json(
-        { error: 'Path non valido' },
+        { error: 'URL non valido' },
         { status: 400 }
       );
     }
 
-    // Cancellazione file (ignora se non esiste)
-    await unlink(fullPath).catch(() => {});
+    console.log('Deleting from Vercel Blob:', imageUrl);
+
+    // Cancellazione da Vercel Blob
+    await del(imageUrl);
+
+    console.log('✓ File deleted successfully');
 
     return NextResponse.json({
       message: 'Immagine cancellata con successo'
     });
   } catch (error) {
     console.error('Errore cancellazione immagine:', error);
-    return NextResponse.json(
-      { error: 'Errore durante la cancellazione dell\'immagine' },
-      { status: 500 }
-    );
+    // Non restituire errore se il file non esiste (già cancellato)
+    return NextResponse.json({
+      message: 'Immagine cancellata o non trovata'
+    });
   }
 }

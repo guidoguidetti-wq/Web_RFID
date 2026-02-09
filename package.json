@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@vercel/blob": "^2.2.0",
     "clsx": "latest",
     "dotenv": "^17.2.3",
     "lucide-react": "latest",
