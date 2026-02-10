@@ -13,7 +13,7 @@ export default function Header() {
     router.push('/login');
   };
 
-  if (pathname === '/login') return null;
+  if (pathname === '/login' || pathname.startsWith('/qr')) return null;
 
   return (
     <header className="bg-white text-black shadow-md transition-all duration-300 h-40 flex items-center justify-between px-6 border-b border-gray-200">

@@ -3,6 +3,15 @@ import { put, del } from '@vercel/blob';
 
 export async function POST(req: NextRequest) {
   try {
+    // Verifica che il token Blob sia configurato
+    if (!process.env.BLOB_READ_WRITE_TOKEN) {
+      console.error('❌ BLOB_READ_WRITE_TOKEN not configured');
+      return NextResponse.json(
+        { error: 'Vercel Blob Storage non configurato. Configura BLOB_READ_WRITE_TOKEN nelle Environment Variables.' },
+        { status: 500 }
+      );
+    }
+
     console.log('📤 Upload request received');
     const formData = await req.formData();
     console.log('✓ FormData parsed');
