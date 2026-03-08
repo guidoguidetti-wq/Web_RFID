@@ -165,7 +165,7 @@ export default function ChecklistsPage() {
                       <div className="flex justify-end gap-3">
                         <Link
                           href={`/checklists/${item.chk_id}/products`}
-                          className="text-purple-600 hover:text-purple-800"
+                          className="inline-flex items-center text-purple-600 hover:text-purple-800"
                           title="Dettagli prodotti"
                         >
                           <FileText size={18} />
