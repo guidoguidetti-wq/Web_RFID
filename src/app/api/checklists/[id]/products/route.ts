@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db';
 
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params;
     const result = await query(
       `SELECT cp.ckp_id, cp.ckp_chl_id, cp.ckp_product_id,
               cp.ckp_qta, cp.ckp_qta_exp, cp.ckp_qta_unexp, cp.ckp_qta_missing,
@@ -11,7 +12,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
        LEFT JOIN "Products" p ON p.product_id = cp.ckp_product_id
        WHERE cp.ckp_chl_id = $1
        ORDER BY cp.ckp_id ASC`,
-      [params.id]
+      [id]
     );
     return NextResponse.json(result.rows);
   } catch (error) {
@@ -20,13 +21,14 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   }
 }
 
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params;
     const { ckp_product_id, ckp_qta, ckp_qta_exp, ckp_qta_unexp, ckp_qta_missing } = await req.json();
     const result = await query(
       `INSERT INTO checklist_products (ckp_chl_id, ckp_product_id, ckp_qta, ckp_qta_exp, ckp_qta_unexp, ckp_qta_missing)
        VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
-      [params.id, ckp_product_id || null, ckp_qta || null, ckp_qta_exp || null, ckp_qta_unexp || null, ckp_qta_missing || null]
+      [id, ckp_product_id || null, ckp_qta || null, ckp_qta_exp || null, ckp_qta_unexp || null, ckp_qta_missing || null]
     );
     return NextResponse.json(result.rows[0]);
   } catch (error) {
