@@ -38,11 +38,12 @@ export default function ChecklistProductsPage() {
       fetch('/api/products?limit=9999'),
       fetch('/api/checklists'),
     ]);
-    setData(await ckpRes.json());
+    const ckpData = await ckpRes.json();
+    setData(Array.isArray(ckpData) ? ckpData : []);
     const prdData = await prdRes.json();
-    setProducts(prdData.products || []);
-    const allChk: Checklist[] = await chkRes.json();
-    setChecklist(allChk.find(c => String(c.chk_id) === checklistId) ?? null);
+    setProducts(Array.isArray(prdData.products) ? prdData.products : []);
+    const allChk = await chkRes.json();
+    setChecklist(Array.isArray(allChk) ? (allChk.find((c: Checklist) => String(c.chk_id) === checklistId) ?? null) : null);
     setLoading(false);
   };
 

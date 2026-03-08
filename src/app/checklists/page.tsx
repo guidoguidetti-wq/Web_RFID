@@ -34,9 +34,12 @@ export default function ChecklistsPage() {
       fetch('/api/places'),
       fetch('/api/zones'),
     ]);
-    setData(await chkRes.json());
-    setPlaces(await plcRes.json());
-    setZones(await znsRes.json());
+    const chkData = await chkRes.json();
+    const plcData = await plcRes.json();
+    const znsData = await znsRes.json();
+    setData(Array.isArray(chkData) ? chkData : []);
+    setPlaces(Array.isArray(plcData) ? plcData : []);
+    setZones(Array.isArray(znsData) ? znsData : []);
     setLoading(false);
   };
 
