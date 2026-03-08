@@ -6,7 +6,7 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const place = searchParams.get('place');
 
-    let sql = 'SELECT chk_id, chk_code, chk_place, chk_zone, chk_notes, chk_creationdate FROM "checklist"';
+    let sql = 'SELECT * FROM "checklist"';
     const params: any[] = [];
 
     if (place) {
