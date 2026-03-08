@@ -95,7 +95,7 @@ export default function ChecklistsPage() {
           onChange={e => setItem({ ...item, chk_place: e.target.value })}
         >
           <option value="">-- Place --</option>
-          {places.map(p => <option key={p.place_id} value={p.place_name}>{p.place_name}</option>)}
+          {places.map(p => <option key={p.place_id} value={p.place_name}>{p.place_id}</option>)}
         </select>
       </td>
       <td className="px-4 py-2">
@@ -105,7 +105,7 @@ export default function ChecklistsPage() {
           onChange={e => setItem({ ...item, chk_zone: e.target.value })}
         >
           <option value="">-- Zone --</option>
-          {zones.map(z => <option key={z.zone_id} value={z.zone_name}>{z.zone_name}</option>)}
+          {zones.map(z => <option key={z.zone_id} value={z.zone_name}>{z.zone_id}</option>)}
         </select>
       </td>
       <td className="px-4 py-2">
