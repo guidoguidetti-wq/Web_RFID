@@ -42,15 +42,25 @@ export async function PUT(req: NextRequest) {
   try {
     const body = await req.json();
     const { chk_id, chk_code, chk_place, chk_zone, chk_notes, chk_creationdate } = body;
-    console.log('PUT checklist body:', body);
+    console.log('PUT checklist body:', JSON.stringify(body));
+
+    if (!chk_id) {
+      return NextResponse.json({ error: 'chk_id mancante nel body', body }, { status: 400 });
+    }
+
     const result = await query(
       'UPDATE "checklist" SET chk_code=$1, chk_place=$2, chk_zone=$3, chk_notes=$4, chk_creationdate=$5 WHERE chk_id=$6 RETURNING *',
-      [chk_code, chk_place || null, chk_zone || null, chk_notes || null, chk_creationdate || null, chk_id]
+      [chk_code || null, chk_place || null, chk_zone || null, chk_notes || null, chk_creationdate || null, chk_id]
     );
-    return NextResponse.json(result.rows[0] ?? null);
+
+    if (result.rowCount === 0) {
+      return NextResponse.json({ error: `Nessun record con chk_id=${chk_id}` }, { status: 404 });
+    }
+
+    return NextResponse.json(result.rows[0]);
   } catch (error: any) {
     console.error('Error updating checklist:', error);
-    return NextResponse.json({ error: "Errore nell'aggiornamento checklist", detail: error?.message }, { status: 500 });
+    return NextResponse.json({ error: "Errore nell'aggiornamento checklist", detail: String(error) }, { status: 500 });
   }
 }
 
