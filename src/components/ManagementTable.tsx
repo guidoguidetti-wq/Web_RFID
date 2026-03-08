@@ -31,7 +31,7 @@ export default function ManagementTable({ title, columns, apiEndpoint }: Managem
     try {
       const response = await fetch(apiEndpoint);
       const result = await response.json();
-      setData(result);
+      setData(Array.isArray(result) ? result : []);
       setLoading(false);
     } catch (error) {
       console.error('Error fetching data:', error);

@@ -18,9 +18,9 @@ export async function GET(req: NextRequest) {
 
     const result = await query(sql, params);
     return NextResponse.json(result.rows);
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error fetching checklists:', error);
-    return NextResponse.json({ error: 'Errore nel recupero checklist' }, { status: 500 });
+    return NextResponse.json({ error: 'Errore nel recupero checklist', detail: error?.message }, { status: 500 });
   }
 }
 

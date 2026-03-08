@@ -38,6 +38,9 @@ export default function ChecklistsPage() {
       const chkData = await chkRes.json();
       const plcData = await plcRes.json();
       const znsData = await znsRes.json();
+      if (!chkRes.ok) console.error('checklists API error:', chkData);
+      if (!plcRes.ok) console.error('places API error:', plcData);
+      if (!znsRes.ok) console.error('zones API error:', znsData);
       setData(Array.isArray(chkData) ? chkData : []);
       setPlaces(Array.isArray(plcData) ? plcData : []);
       setZones(Array.isArray(znsData) ? znsData : []);
