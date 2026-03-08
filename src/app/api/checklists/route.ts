@@ -32,23 +32,25 @@ export async function POST(req: NextRequest) {
       [chk_code, chk_place || null, chk_zone || null, chk_notes || null, chk_creationdate || null]
     );
     return NextResponse.json(result.rows[0]);
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error creating checklist:', error);
-    return NextResponse.json({ error: 'Errore nella creazione checklist' }, { status: 500 });
+    return NextResponse.json({ error: 'Errore nella creazione checklist', detail: error?.message }, { status: 500 });
   }
 }
 
 export async function PUT(req: NextRequest) {
   try {
-    const { chk_id, chk_code, chk_place, chk_zone, chk_notes, chk_creationdate } = await req.json();
+    const body = await req.json();
+    const { chk_id, chk_code, chk_place, chk_zone, chk_notes, chk_creationdate } = body;
+    console.log('PUT checklist body:', body);
     const result = await query(
       'UPDATE "checklist" SET chk_code=$1, chk_place=$2, chk_zone=$3, chk_notes=$4, chk_creationdate=$5 WHERE chk_id=$6 RETURNING *',
       [chk_code, chk_place || null, chk_zone || null, chk_notes || null, chk_creationdate || null, chk_id]
     );
-    return NextResponse.json(result.rows[0]);
-  } catch (error) {
+    return NextResponse.json(result.rows[0] ?? null);
+  } catch (error: any) {
     console.error('Error updating checklist:', error);
-    return NextResponse.json({ error: "Errore nell'aggiornamento checklist" }, { status: 500 });
+    return NextResponse.json({ error: "Errore nell'aggiornamento checklist", detail: error?.message }, { status: 500 });
   }
 }
 
@@ -58,8 +60,8 @@ export async function DELETE(req: NextRequest) {
     const id = searchParams.get('id');
     await query('DELETE FROM "checklist" WHERE chk_id = $1', [id]);
     return NextResponse.json({ success: true });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error deleting checklist:', error);
-    return NextResponse.json({ error: 'Errore nella cancellazione checklist' }, { status: 500 });
+    return NextResponse.json({ error: 'Errore nella cancellazione checklist', detail: error?.message }, { status: 500 });
   }
 }
