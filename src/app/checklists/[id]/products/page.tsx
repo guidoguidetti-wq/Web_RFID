@@ -33,28 +33,45 @@ export default function ChecklistProductsPage() {
   useEffect(() => { fetchAll(); }, [checklistId]);
 
   const fetchAll = async () => {
-    const [ckpRes, prdRes, chkRes] = await Promise.all([
-      fetch(`/api/checklists/${checklistId}/products`),
-      fetch('/api/products?limit=9999'),
-      fetch('/api/checklists'),
-    ]);
-    const ckpData = await ckpRes.json();
-    setData(Array.isArray(ckpData) ? ckpData : []);
-    const prdData = await prdRes.json();
-    setProducts(Array.isArray(prdData.products) ? prdData.products : []);
-    const allChk = await chkRes.json();
-    setChecklist(Array.isArray(allChk) ? (allChk.find((c: Checklist) => String(c.chk_id) === checklistId) ?? null) : null);
-    setLoading(false);
+    try {
+      const [ckpRes, prdRes, chkRes] = await Promise.all([
+        fetch(`/api/checklists/${checklistId}/products`, { cache: 'no-store' }),
+        fetch('/api/products?limit=9999',                { cache: 'no-store' }),
+        fetch('/api/checklists',                         { cache: 'no-store' }),
+      ]);
+      const ckpData = await ckpRes.json();
+      setData(Array.isArray(ckpData) ? ckpData : []);
+      const prdData = await prdRes.json();
+      setProducts(Array.isArray(prdData.products) ? prdData.products : []);
+      const allChk = await chkRes.json();
+      setChecklist(Array.isArray(allChk) ? (allChk.find((c: Checklist) => String(c.chk_id) === checklistId) ?? null) : null);
+    } catch (e) {
+      console.error('fetchAll error:', e);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleSave = async (item: any, isNew: boolean) => {
-    const url = `/api/checklists/${checklistId}/products`;
-    const res = await fetch(url, {
-      method: isNew ? 'POST' : 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(item),
-    });
-    if (res.ok) { fetchAll(); setEditingItem(null); setNewItem(null); }
+    try {
+      const url = `/api/checklists/${checklistId}/products`;
+      const res = await fetch(url, {
+        method: isNew ? 'POST' : 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(item),
+      });
+      if (res.ok) {
+        await fetchAll();
+        setEditingItem(null);
+        setNewItem(null);
+      } else {
+        const err = await res.json().catch(() => ({}));
+        alert(err.error || 'Errore nel salvataggio');
+      }
+    } catch (e) {
+      console.error('handleSave error:', e);
+      alert('Errore di rete');
+    }
   };
 
   const handleDelete = async (id: number) => {

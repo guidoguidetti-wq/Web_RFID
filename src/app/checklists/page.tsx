@@ -29,27 +29,44 @@ export default function ChecklistsPage() {
   useEffect(() => { fetchAll(); }, []);
 
   const fetchAll = async () => {
-    const [chkRes, plcRes, znsRes] = await Promise.all([
-      fetch('/api/checklists'),
-      fetch('/api/places'),
-      fetch('/api/zones'),
-    ]);
-    const chkData = await chkRes.json();
-    const plcData = await plcRes.json();
-    const znsData = await znsRes.json();
-    setData(Array.isArray(chkData) ? chkData : []);
-    setPlaces(Array.isArray(plcData) ? plcData : []);
-    setZones(Array.isArray(znsData) ? znsData : []);
-    setLoading(false);
+    try {
+      const [chkRes, plcRes, znsRes] = await Promise.all([
+        fetch('/api/checklists', { cache: 'no-store' }),
+        fetch('/api/places',     { cache: 'no-store' }),
+        fetch('/api/zones',      { cache: 'no-store' }),
+      ]);
+      const chkData = await chkRes.json();
+      const plcData = await plcRes.json();
+      const znsData = await znsRes.json();
+      setData(Array.isArray(chkData) ? chkData : []);
+      setPlaces(Array.isArray(plcData) ? plcData : []);
+      setZones(Array.isArray(znsData) ? znsData : []);
+    } catch (e) {
+      console.error('fetchAll error:', e);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleSave = async (item: any, isNew: boolean) => {
-    const res = await fetch('/api/checklists', {
-      method: isNew ? 'POST' : 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(item),
-    });
-    if (res.ok) { fetchAll(); setEditingItem(null); setNewItem(null); }
+    try {
+      const res = await fetch('/api/checklists', {
+        method: isNew ? 'POST' : 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(item),
+      });
+      if (res.ok) {
+        await fetchAll();
+        setEditingItem(null);
+        setNewItem(null);
+      } else {
+        const err = await res.json().catch(() => ({}));
+        alert(err.error || 'Errore nel salvataggio');
+      }
+    } catch (e) {
+      console.error('handleSave error:', e);
+      alert('Errore di rete');
+    }
   };
 
   const handleDelete = async (id: number) => {
