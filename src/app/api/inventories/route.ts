@@ -50,14 +50,14 @@ export async function POST(req: NextRequest) {
     let { inv_name, inv_start_date, inv_place_id, inv_state, inv_note, inv_chk_id, inv_last, inv_last_place, inv_last_zones, inv_det_place, inv_det_zone, inv_mis_place, inv_mis_zone } = body;
 
     // Convert empty strings to NULL for foreign key fields and integer fields
-    inv_place_id = inv_place_id || null;
-    inv_chk_id = inv_chk_id || null;
-    inv_last_place = inv_last_place || null;
-    inv_last_zones = inv_last_zones || null;
-    inv_det_place = inv_det_place || null;
-    inv_det_zone = inv_det_zone || null;
-    inv_mis_place = inv_mis_place || null;
-    inv_mis_zone = inv_mis_zone || null;
+    inv_place_id  = inv_place_id  || null;
+    inv_chk_id    = (inv_chk_id === 0 || inv_chk_id === '' || inv_chk_id == null) ? null : inv_chk_id;
+    inv_last_place  = inv_last_place  || null;
+    inv_last_zones  = inv_last_zones  || null;
+    inv_det_place   = inv_det_place   || null;
+    inv_det_zone    = inv_det_zone    || null;
+    inv_mis_place   = inv_mis_place   || null;
+    inv_mis_zone    = inv_mis_zone    || null;
 
     const sql = `
       INSERT INTO "inventories"
@@ -86,7 +86,7 @@ export async function PUT(req: NextRequest) {
     // Convert empty strings to NULL for foreign key fields and integer fields
     const fieldsToConvert = ['inv_place_id', 'inv_chk_id', 'inv_last_place', 'inv_last_zones', 'inv_det_place', 'inv_det_zone', 'inv_mis_place', 'inv_mis_zone'];
     fieldsToConvert.forEach(field => {
-      if (field in updates && updates[field] === '') {
+      if (field in updates && !updates[field]) {
         updates[field] = null;
       }
     });
@@ -110,9 +110,9 @@ export async function PUT(req: NextRequest) {
     }
 
     return NextResponse.json(result.rows[0]);
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error updating inventory:', error);
-    return NextResponse.json({ error: 'Errore nell\'aggiornamento inventario' }, { status: 500 });
+    return NextResponse.json({ error: "Errore nell'aggiornamento inventario", detail: String(error) }, { status: 500 });
   }
 }
 
