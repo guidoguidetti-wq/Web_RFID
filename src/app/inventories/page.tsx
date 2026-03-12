@@ -318,113 +318,141 @@ export default function InventoriesPage() {
 
       <div className="bg-white rounded-xl shadow overflow-hidden border border-gray-200">
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse table-fixed min-w-[900px]">
+          <table className="w-full text-left border-collapse table-fixed min-w-[1200px]">
             <thead>
               <tr className="bg-white border-b border-gray-200">
-                <th className="px-4 py-4 text-sm font-bold text-gray-700 w-[6%] align-top">
+                <th className="px-4 py-4 text-sm font-bold text-gray-700 w-[5%] align-top">
                   <div className="flex flex-col gap-2">
                     <span>ID</span>
-                    <input 
-                      type="text" 
-                      placeholder="Filtra" 
+                    <input
+                      type="text"
+                      placeholder="Filtra"
                       className="text-xs font-normal p-1 border border-gray-300 rounded w-full"
                       value={filters.inv_id}
                       onChange={(e) => handleFilterChange('inv_id', e.target.value)}
                     />
                   </div>
                 </th>
-                <th className="px-4 py-4 text-sm font-bold text-gray-700 w-[15%] align-top">
+                <th className="px-4 py-4 text-sm font-bold text-gray-700 w-[10%] align-top">
+                  <div className="flex flex-col gap-2 pt-1">
+                    <span>Tipo</span>
+                  </div>
+                </th>
+                <th className="px-4 py-4 text-sm font-bold text-gray-700 w-[13%] align-top">
                    <div className="flex flex-col gap-2">
                     <span>Nome</span>
-                    <input 
-                      type="text" 
-                      placeholder="Filtra" 
+                    <input
+                      type="text"
+                      placeholder="Filtra"
                       className="text-xs font-normal p-1 border border-gray-300 rounded w-full"
                       value={filters.inv_name}
                       onChange={(e) => handleFilterChange('inv_name', e.target.value)}
                     />
                   </div>
                 </th>
-                <th className="px-4 py-4 text-sm font-bold text-gray-700 w-[12%] align-top">
+                <th className="px-4 py-4 text-sm font-bold text-gray-700 w-[11%] align-top">
                    <div className="flex flex-col gap-2">
                     <span>Data Inizio</span>
-                    <input 
-                      type="text" 
-                      placeholder="Filtra" 
+                    <input
+                      type="text"
+                      placeholder="Filtra"
                       className="text-xs font-normal p-1 border border-gray-300 rounded w-full"
                       value={filters.inv_start_date}
                       onChange={(e) => handleFilterChange('inv_start_date', e.target.value)}
                     />
                   </div>
                 </th>
-                <th className="px-4 py-4 text-sm font-bold text-gray-700 w-[6%] align-top">
+                <th className="px-4 py-4 text-sm font-bold text-gray-700 w-[5%] align-top">
                     <div className="flex flex-col gap-2 pt-1">
                       <span>Items</span>
                     </div>
                 </th>
-                <th className="px-4 py-4 text-sm font-bold text-gray-700 w-[10%] align-top">
+                <th className="px-4 py-4 text-sm font-bold text-gray-700 w-[5%] align-top">
+                    <div className="flex flex-col gap-2 pt-1">
+                      <span className="text-green-700">Exp</span>
+                    </div>
+                </th>
+                <th className="px-4 py-4 text-sm font-bold text-gray-700 w-[5%] align-top">
+                    <div className="flex flex-col gap-2 pt-1">
+                      <span className="text-orange-600">Unexp</span>
+                    </div>
+                </th>
+                <th className="px-4 py-4 text-sm font-bold text-gray-700 w-[5%] align-top">
+                    <div className="flex flex-col gap-2 pt-1">
+                      <span className="text-red-600">Lost</span>
+                    </div>
+                </th>
+                <th className="px-4 py-4 text-sm font-bold text-gray-700 w-[8%] align-top">
                    <div className="flex flex-col gap-2">
                     <span>Luogo</span>
-                    <input 
-                      type="text" 
-                      placeholder="Filtra" 
+                    <input
+                      type="text"
+                      placeholder="Filtra"
                       className="text-xs font-normal p-1 border border-gray-300 rounded w-full"
                       value={filters.inv_place_id}
                       onChange={(e) => handleFilterChange('inv_place_id', e.target.value)}
                     />
                   </div>
                 </th>
-                <th className="px-4 py-4 text-sm font-bold text-gray-700 w-[8%] align-top">
+                <th className="px-4 py-4 text-sm font-bold text-gray-700 w-[7%] align-top">
                    <div className="flex flex-col gap-2">
                     <span>Stato</span>
-                    <input 
-                      type="text" 
-                      placeholder="Filtra" 
+                    <input
+                      type="text"
+                      placeholder="Filtra"
                       className="text-xs font-normal p-1 border border-gray-300 rounded w-full"
                       value={filters.inv_state}
                       onChange={(e) => handleFilterChange('inv_state', e.target.value)}
                     />
                   </div>
                 </th>
-                <th className="px-4 py-4 text-sm font-bold text-gray-700 w-[12%] align-top">
+                <th className="px-4 py-4 text-sm font-bold text-gray-700 w-[9%] align-top">
                    <div className="flex flex-col gap-2">
                     <span>Note</span>
-                    <input 
-                      type="text" 
-                      placeholder="Filtra" 
+                    <input
+                      type="text"
+                      placeholder="Filtra"
                       className="text-xs font-normal p-1 border border-gray-300 rounded w-full"
                       value={filters.inv_note}
                       onChange={(e) => handleFilterChange('inv_note', e.target.value)}
                     />
                   </div>
                 </th>
-                 <th className="px-4 py-4 text-sm font-bold text-gray-700 w-[8%] align-top">
+                <th className="px-4 py-4 text-sm font-bold text-gray-700 w-[7%] align-top">
                    <div className="flex flex-col gap-2">
                     <span>Checklist</span>
-                    <input 
-                      type="text" 
-                      placeholder="Filtra" 
+                    <input
+                      type="text"
+                      placeholder="Filtra"
                       className="text-xs font-normal p-1 border border-gray-300 rounded w-full"
                       value={filters.inv_chk_id}
                       onChange={(e) => handleFilterChange('inv_chk_id', e.target.value)}
                     />
                   </div>
                 </th>
-                <th className="px-4 py-4 text-sm font-bold text-gray-700 w-[23%] align-top text-right">
+                <th className="px-4 py-4 text-sm font-bold text-gray-700 w-[10%] align-top text-right">
                     Azioni
                 </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
               {filteredInventories.length === 0 ? (
-                 <tr><td colSpan={9} className="p-8 text-center text-gray-500">Nessun inventario trovato.</td></tr>
+                 <tr><td colSpan={13} className="p-8 text-center text-gray-500">Nessun inventario trovato.</td></tr>
               ) : (
                 filteredInventories.map((inv, idx) => (
                   <tr key={idx}>
                     <td className="px-4 py-3 text-sm text-gray-700 truncate" title={String(inv.inv_id)}>{inv.inv_id}</td>
+                    <td className="px-4 py-3 text-sm text-gray-700">
+                      <span className="text-xs px-1.5 py-0.5 rounded bg-gray-100 text-gray-700 whitespace-nowrap">
+                        {inv.inv_type === 1 ? 'Place/Zones' : inv.inv_type === 2 ? 'Chk(SKU)' : inv.inv_type === 3 ? 'Chk(EPC)' : inv.inv_type === 4 ? 'No Check' : '—'}
+                      </span>
+                    </td>
                     <td className="px-4 py-3 text-sm text-gray-700 truncate" title={inv.inv_name}>{inv.inv_name}</td>
                     <td className="px-4 py-3 text-sm text-gray-700 truncate" title={formatDate(inv.inv_start_date)}>{formatDate(inv.inv_start_date)}</td>
-                    <td className="px-4 py-3 text-sm text-gray-700 font-semibold">{inv.item_count}</td>
+                    <td className="px-4 py-3 text-sm text-gray-700 font-semibold">{inv.item_count ?? 0}</td>
+                    <td className="px-4 py-3 text-sm font-semibold text-green-700">{inv.count_expected ?? 0}</td>
+                    <td className="px-4 py-3 text-sm font-semibold text-orange-600">{inv.count_unexpected ?? 0}</td>
+                    <td className="px-4 py-3 text-sm font-semibold text-red-600">{inv.count_lost ?? 0}</td>
                     <td className="px-4 py-3 text-sm text-gray-700 truncate" title={inv.place_name || inv.inv_place_id}>
                       {inv.place_name || inv.inv_place_id}
                     </td>

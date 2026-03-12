@@ -7,8 +7,9 @@ export async function GET(req: NextRequest) {
     const id = searchParams.get('id');
 
     let sql = `
-      SELECT 
+      SELECT
         i.inv_id,
+        i.inv_type,
         i.inv_name,
         i.inv_start_date,
         i.inv_place_id,
@@ -23,7 +24,10 @@ export async function GET(req: NextRequest) {
         i.inv_det_zone,
         i.inv_mis_place,
         i.inv_mis_zone,
-        (SELECT COUNT(*)::int FROM "inventory_items" ii WHERE ii.int_inv_id = i.inv_id) as item_count
+        (SELECT COUNT(*)::int FROM "inventory_items" ii WHERE ii.int_inv_id = i.inv_id AND (ii.inv_expected = true OR ii.inv_unexpected = true)) as item_count,
+        (SELECT COUNT(*)::int FROM "inventory_items" ii WHERE ii.int_inv_id = i.inv_id AND ii.inv_expected = true) as count_expected,
+        (SELECT COUNT(*)::int FROM "inventory_items" ii WHERE ii.int_inv_id = i.inv_id AND ii.inv_unexpected = true) as count_unexpected,
+        (SELECT COUNT(*)::int FROM "inventory_items" ii WHERE ii.int_inv_id = i.inv_id AND ii.inv_lost = true) as count_lost
       FROM "inventories" i
       LEFT JOIN "Places" p ON i.inv_place_id = p.place_id
     `;
