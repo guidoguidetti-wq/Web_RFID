@@ -17,6 +17,7 @@ export async function GET(req: NextRequest) {
         i.inv_state,
         i.inv_note,
         i.inv_chk_id,
+        c.chk_code,
         i.inv_last,
         i.inv_last_place,
         i.inv_last_zones,
@@ -30,6 +31,7 @@ export async function GET(req: NextRequest) {
         (SELECT COUNT(*)::int FROM "inventory_items" ii WHERE ii.int_inv_id = i.inv_id AND ii.inv_lost = true) as count_lost
       FROM "inventories" i
       LEFT JOIN "Places" p ON i.inv_place_id = p.place_id
+      LEFT JOIN "checklist" c ON i.inv_chk_id = c.chk_id
     `;
     
     const params = [];

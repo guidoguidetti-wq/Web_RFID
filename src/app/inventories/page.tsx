@@ -63,10 +63,9 @@ export default function InventoriesPage() {
     }
   };
 
-  const fetchChecklists = async (place: string) => {
+  const fetchChecklists = async () => {
     try {
-      const url = place ? `/api/checklists?place=${encodeURIComponent(place)}` : '/api/checklists';
-      const res = await fetch(url);
+      const res = await fetch('/api/checklists');
       if (res.ok) {
         const data = await res.json();
         setChecklists(data);
@@ -82,7 +81,8 @@ export default function InventoriesPage() {
       await Promise.all([
         fetchInventories(),
         fetchPlaces(),
-        fetchZones()
+        fetchZones(),
+        fetchChecklists()
       ]);
     } catch (error) {
       console.error("Error loading initial data", error);
@@ -99,13 +99,9 @@ export default function InventoriesPage() {
       setUserPlace(user.place || '');
       setUserName(user.name || '');
     }
-    
+
     fetchInitialData();
   }, []);
-
-  useEffect(() => {
-    fetchChecklists(userPlace);
-  }, [userPlace]);
 
   useEffect(() => {
     if (inventories.length > 0) {
@@ -154,7 +150,7 @@ export default function InventoriesPage() {
     const defaultName = `${userName} - ${userPlace} - ${dateStr}`;
 
     setCurrentInv({
-      inv_type: '',
+      inv_type: 4,
       inv_name: defaultName,
       inv_start_date: localIso,
       inv_place_id: userPlace,
@@ -447,10 +443,12 @@ export default function InventoriesPage() {
                 filteredInventories.map((inv, idx) => (
                   <tr key={idx}>
                     <td className="px-4 py-3 text-sm text-gray-700 truncate" title={String(inv.inv_id)}>{inv.inv_id}</td>
-                    <td className="px-4 py-3 text-sm text-gray-700">
-                      <span className="text-xs px-1.5 py-0.5 rounded bg-gray-100 text-gray-700 whitespace-nowrap">
-                        {inv.inv_type === 1 ? 'Place/Zones' : inv.inv_type === 2 ? 'Chk(SKU)' : inv.inv_type === 3 ? 'Chk(EPC)' : inv.inv_type === 4 ? 'No Check' : '—'}
-                      </span>
+                    <td className="px-4 py-3 text-sm">
+                      {inv.inv_type === 1 && <span className="text-xs px-1.5 py-0.5 rounded bg-blue-100 text-blue-800 whitespace-nowrap">Place/Zones</span>}
+                      {inv.inv_type === 2 && <span className="text-xs px-1.5 py-0.5 rounded bg-green-100 text-green-800 whitespace-nowrap">Chk(SKU)</span>}
+                      {inv.inv_type === 3 && <span className="text-xs px-1.5 py-0.5 rounded bg-purple-100 text-purple-800 whitespace-nowrap">Chk(EPC)</span>}
+                      {inv.inv_type === 4 && <span className="text-xs px-1.5 py-0.5 rounded bg-gray-100 text-gray-600 whitespace-nowrap">No Check</span>}
+                      {!inv.inv_type && <span className="text-gray-400">—</span>}
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-700 truncate" title={inv.inv_name}>{inv.inv_name}</td>
                     <td className="px-4 py-3 text-sm text-gray-700 truncate" title={formatDate(inv.inv_start_date)}>{formatDate(inv.inv_start_date)}</td>
@@ -467,7 +465,9 @@ export default function InventoriesPage() {
                         </span>
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-700 truncate" title={inv.inv_note}>{inv.inv_note}</td>
-                    <td className="px-4 py-3 text-sm text-gray-700 truncate">{inv.inv_chk_id}</td>
+                    <td className="px-4 py-3 text-sm text-gray-700 truncate" title={inv.inv_chk_id ? `${inv.inv_chk_id} - ${inv.chk_code || ''}` : ''}>
+                      {inv.inv_chk_id ? `${inv.inv_chk_id} - ${inv.chk_code || ''}` : ''}
+                    </td>
                     <td className="px-4 py-3 text-right">
                         <div className="flex justify-end gap-2">
                             <button 
@@ -752,7 +752,7 @@ export default function InventoriesPage() {
                   >
                     <option value="">Seleziona Checklist...</option>
                     {checklists.map(c => (
-                        <option key={c.chk_id} value={c.chk_id}>{c.chk_code}</option>
+                        <option key={c.chk_id} value={c.chk_id}>{c.chk_id} - {c.chk_code}</option>
                     ))}
                   </select>
                </div>
