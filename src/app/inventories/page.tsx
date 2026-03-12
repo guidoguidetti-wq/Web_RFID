@@ -154,9 +154,10 @@ export default function InventoriesPage() {
     const defaultName = `${userName} - ${userPlace} - ${dateStr}`;
 
     setCurrentInv({
+      inv_type: '',
       inv_name: defaultName,
       inv_start_date: localIso,
-      inv_place_id: userPlace, // Also pre-fill place if desired, logical default
+      inv_place_id: userPlace,
       inv_state: 'OPEN',
       inv_note: '',
       inv_chk_id: '',
@@ -181,13 +182,17 @@ export default function InventoriesPage() {
     setIsModalOpen(true);
   };
 
-  const handleLastChange = (checked: boolean) => {
+  const handleTypeChange = (value: string) => {
+    const type = value === '' ? null : Number(value);
+    const isFromPlace = type === 1;
+    const hasChecklist = type === 2 || type === 3;
     setCurrentInv((prev: any) => ({
       ...prev,
-      inv_last: checked,
-      inv_chk_id: checked ? 0 : prev.inv_chk_id,
-      inv_last_place: checked ? prev.inv_last_place : null,
-      inv_last_zones: checked ? prev.inv_last_zones : null
+      inv_type: value,
+      inv_last: isFromPlace,
+      inv_chk_id: hasChecklist ? prev.inv_chk_id : '',
+      inv_last_place: isFromPlace ? prev.inv_last_place : null,
+      inv_last_zones: isFromPlace ? prev.inv_last_zones : null,
     }));
   };
 
@@ -573,6 +578,20 @@ export default function InventoriesPage() {
             </div>
             <div className="p-6 overflow-y-auto flex-1 space-y-4">
                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Tipo</label>
+                  <select
+                    className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 outline-none"
+                    value={currentInv.inv_type ?? ''}
+                    onChange={(e) => handleTypeChange(e.target.value)}
+                  >
+                    <option value="">Seleziona Tipo...</option>
+                    <option value="1">1 - From Place/Zones</option>
+                    <option value="2">2 - From Checklist (SKU)</option>
+                    <option value="3">3 - From Checklist (EPC)</option>
+                    <option value="4">4 - No Check</option>
+                  </select>
+               </div>
+               <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Nome</label>
                   <input
                     type="text"
@@ -674,17 +693,18 @@ export default function InventoriesPage() {
                
                {/* Last Logic */}
                <div className="flex items-center gap-2 border-t pt-2 mt-2">
-                 <input 
+                 <input
                    type="checkbox"
                    id="inv_last"
                    checked={currentInv.inv_last || false}
-                   onChange={(e) => handleLastChange(e.target.checked)}
-                   className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                   readOnly
+                   disabled
+                   className="w-4 h-4 text-blue-600 border-gray-300 rounded opacity-70 cursor-not-allowed"
                  />
-                 <label htmlFor="inv_last" className="text-sm font-medium text-gray-700">Inventario da Giacenza RFID</label>
+                 <label htmlFor="inv_last" className="text-sm font-medium text-gray-500">Inventario da Giacenza RFID <span className="text-xs text-gray-400">(derivato da Tipo)</span></label>
                </div>
 
-               {currentInv.inv_last && (
+               {Number(currentInv.inv_type) === 1 && (
                  <div className="space-y-4 bg-gray-50 p-4 rounded-lg border border-gray-200">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Items Risultanti nel Place</label>
@@ -725,10 +745,10 @@ export default function InventoriesPage() {
                <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Checklist</label>
                   <select
-                    className={`w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 outline-none ${ currentInv.inv_last ? 'bg-gray-100 text-gray-500 cursor-not-allowed' : ''}`}
+                    className={`w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 outline-none ${!(Number(currentInv.inv_type) === 2 || Number(currentInv.inv_type) === 3) ? 'bg-gray-100 text-gray-500 cursor-not-allowed' : ''}`}
                     value={currentInv.inv_chk_id || ''}
                     onChange={(e) => setCurrentInv({...currentInv, inv_chk_id: e.target.value})}
-                    disabled={currentInv.inv_last}
+                    disabled={!(Number(currentInv.inv_type) === 2 || Number(currentInv.inv_type) === 3)}
                   >
                     <option value="">Seleziona Checklist...</option>
                     {checklists.map(c => (

@@ -51,9 +51,10 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    let { inv_name, inv_start_date, inv_place_id, inv_state, inv_note, inv_chk_id, inv_last, inv_last_place, inv_last_zones, inv_det_place, inv_det_zone, inv_mis_place, inv_mis_zone } = body;
+    let { inv_type, inv_name, inv_start_date, inv_place_id, inv_state, inv_note, inv_chk_id, inv_last, inv_last_place, inv_last_zones, inv_det_place, inv_det_zone, inv_mis_place, inv_mis_zone } = body;
 
     // Convert empty strings to NULL for foreign key fields and integer fields
+    inv_type      = (inv_type === '' || inv_type == null) ? null : Number(inv_type);
     inv_place_id  = inv_place_id  || null;
     inv_chk_id    = (inv_chk_id === 0 || inv_chk_id === '' || inv_chk_id == null) ? null : inv_chk_id;
     inv_last_place  = inv_last_place  || null;
@@ -65,12 +66,12 @@ export async function POST(req: NextRequest) {
 
     const sql = `
       INSERT INTO "inventories"
-      (inv_name, inv_start_date, inv_place_id, inv_state, inv_note, inv_chk_id, inv_last, inv_last_place, inv_last_zones, inv_det_place, inv_det_zone, inv_mis_place, inv_mis_zone)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+      (inv_type, inv_name, inv_start_date, inv_place_id, inv_state, inv_note, inv_chk_id, inv_last, inv_last_place, inv_last_zones, inv_det_place, inv_det_zone, inv_mis_place, inv_mis_zone)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
       RETURNING *
     `;
 
-    const result = await query(sql, [inv_name, inv_start_date, inv_place_id, inv_state, inv_note, inv_chk_id, inv_last, inv_last_place, inv_last_zones, inv_det_place, inv_det_zone, inv_mis_place, inv_mis_zone]);
+    const result = await query(sql, [inv_type, inv_name, inv_start_date, inv_place_id, inv_state, inv_note, inv_chk_id, inv_last, inv_last_place, inv_last_zones, inv_det_place, inv_det_zone, inv_mis_place, inv_mis_zone]);
     return NextResponse.json(result.rows[0], { status: 201 });
   } catch (error) {
     console.error('Error creating inventory:', error);
@@ -95,7 +96,11 @@ export async function PUT(req: NextRequest) {
       }
     });
 
-    const validColumns = ['inv_name', 'inv_start_date', 'inv_place_id', 'inv_state', 'inv_note', 'inv_chk_id', 'inv_last', 'inv_last_place', 'inv_last_zones', 'inv_det_place', 'inv_det_zone', 'inv_mis_place', 'inv_mis_zone'];
+    if ('inv_type' in updates) {
+      updates['inv_type'] = (updates['inv_type'] === '' || updates['inv_type'] == null) ? null : Number(updates['inv_type']);
+    }
+
+    const validColumns = ['inv_type', 'inv_name', 'inv_start_date', 'inv_place_id', 'inv_state', 'inv_note', 'inv_chk_id', 'inv_last', 'inv_last_place', 'inv_last_zones', 'inv_det_place', 'inv_det_zone', 'inv_mis_place', 'inv_mis_zone'];
     const keys = Object.keys(updates).filter(k => validColumns.includes(k));
 
     if (keys.length === 0) {
