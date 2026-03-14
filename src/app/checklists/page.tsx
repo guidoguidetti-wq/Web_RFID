@@ -17,12 +17,12 @@ interface Place { place_id: number; place_name: string; }
 interface Zone  { zone_id: number;  zone_name: string;  }
 
 export default function ChecklistsPage() {
-  const [data,         setData]         = useState<Checklist[]>([]);
-  const [places,       setPlaces]       = useState<Place[]>([]);
-  const [zones,        setZones]        = useState<Zone[]>([]);
-  const [loading,      setLoading]      = useState(true);
-  const [editingItem,  setEditingItem]  = useState<any>(null);
-  const [newItem,      setNewItem]      = useState<any>(null);
+  const [data,        setData]        = useState<Checklist[]>([]);
+  const [places,      setPlaces]      = useState<Place[]>([]);
+  const [zones,       setZones]       = useState<Zone[]>([]);
+  const [loading,     setLoading]     = useState(true);
+  const [editingItem, setEditingItem] = useState<any>(null);
+  const [newItem,     setNewItem]     = useState<any>(null);
 
   const today = new Date().toISOString().split('T')[0];
 
@@ -38,9 +38,6 @@ export default function ChecklistsPage() {
       const chkData = await chkRes.json();
       const plcData = await plcRes.json();
       const znsData = await znsRes.json();
-      if (!chkRes.ok) console.error('checklists API error:', chkData);
-      if (!plcRes.ok) console.error('places API error:', plcData);
-      if (!znsRes.ok) console.error('zones API error:', znsData);
       setData(Array.isArray(chkData) ? chkData : []);
       setPlaces(Array.isArray(plcData) ? plcData : []);
       setZones(Array.isArray(znsData) ? znsData : []);
@@ -78,7 +75,11 @@ export default function ChecklistsPage() {
     if (res.ok) fetchAll();
   };
 
-  const FormRow = ({ item, setItem, isNew }: { item: any; setItem: (v: any) => void; isNew: boolean }) => (
+  const formatDate = (d: string) =>
+    d ? new Date(d).toLocaleDateString('it-IT') : '';
+
+  // Inline edit cells — defined outside render loop to avoid focus issues
+  const editCells = (item: any, setItem: (v: any) => void, isNew: boolean) => (
     <>
       <td className="px-4 py-2">
         <input
@@ -96,16 +97,6 @@ export default function ChecklistsPage() {
         >
           <option value="">-- Place --</option>
           {places.map(p => <option key={p.place_id} value={p.place_name}>{p.place_id}</option>)}
-        </select>
-      </td>
-      <td className="px-4 py-2">
-        <select
-          className="w-full p-1.5 border border-blue-300 rounded text-sm"
-          value={item.chk_zone || ''}
-          onChange={e => setItem({ ...item, chk_zone: e.target.value })}
-        >
-          <option value="">-- Zone --</option>
-          {zones.map(z => <option key={z.zone_id} value={z.zone_name}>{z.zone_id}</option>)}
         </select>
       </td>
       <td className="px-4 py-2">
@@ -137,9 +128,6 @@ export default function ChecklistsPage() {
     </>
   );
 
-  const formatDate = (d: string) =>
-    d ? new Date(d).toLocaleDateString('it-IT') : '';
-
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="flex justify-between items-center mb-6">
@@ -158,7 +146,6 @@ export default function ChecklistsPage() {
             <tr className="bg-gray-50">
               <th className="px-4 py-3 text-sm font-semibold text-gray-600">Codice</th>
               <th className="px-4 py-3 text-sm font-semibold text-gray-600">Place</th>
-              <th className="px-4 py-3 text-sm font-semibold text-gray-600">Zone</th>
               <th className="px-4 py-3 text-sm font-semibold text-gray-600">Note</th>
               <th className="px-4 py-3 text-sm font-semibold text-gray-600">Data Creazione</th>
               <th className="px-4 py-3 text-sm font-semibold text-gray-600 text-right">Azioni</th>
@@ -167,18 +154,17 @@ export default function ChecklistsPage() {
           <tbody className="divide-y divide-gray-200">
             {newItem && (
               <tr className="bg-blue-50">
-                <FormRow item={newItem} setItem={setNewItem} isNew={true} />
+                {editCells(newItem, setNewItem, true)}
               </tr>
             )}
             {data.map(item => (
               <tr key={item.chk_id} className="hover:bg-gray-50 transition-colors">
                 {editingItem?.chk_id === item.chk_id ? (
-                  <FormRow item={editingItem} setItem={setEditingItem} isNew={false} />
+                  editCells(editingItem, setEditingItem, false)
                 ) : (
                   <>
                     <td className="px-4 py-3 text-sm text-gray-700 font-medium">{item.chk_code}</td>
                     <td className="px-4 py-3 text-sm text-gray-700">{item.chk_place}</td>
-                    <td className="px-4 py-3 text-sm text-gray-700">{item.chk_zone}</td>
                     <td className="px-4 py-3 text-sm text-gray-700">{item.chk_notes}</td>
                     <td className="px-4 py-3 text-sm text-gray-700">{formatDate(item.chk_creationdate)}</td>
                     <td className="px-4 py-3 text-right">
@@ -190,7 +176,10 @@ export default function ChecklistsPage() {
                         >
                           <FileText size={18} />
                         </Link>
-                        <button onClick={() => setEditingItem({ ...item, chk_creationdate: item.chk_creationdate?.split('T')[0] ?? '' })} className="text-blue-600 hover:text-blue-800">
+                        <button
+                          onClick={() => setEditingItem({ ...item, chk_creationdate: item.chk_creationdate?.split('T')[0] ?? '' })}
+                          className="text-blue-600 hover:text-blue-800"
+                        >
                           <Pencil size={18} />
                         </button>
                         <button onClick={() => handleDelete(item.chk_id)} className="text-red-600 hover:text-red-800">
