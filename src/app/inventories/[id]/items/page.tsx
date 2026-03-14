@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { ArrowLeft, Layers, Download, CheckCircle, AlertTriangle, XCircle, Filter } from 'lucide-react';
 
@@ -9,7 +9,6 @@ export default function InventoryItemsPage() {
   const id = params.id as string;
   const router = useRouter();
   const [items, setItems] = useState<any[]>([]);
-  const [filteredItems, setFilteredItems] = useState<any[]>([]);
   const [labels, setLabels] = useState<any[]>([]);
   const [inventory, setInventory] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -29,32 +28,23 @@ export default function InventoryItemsPage() {
     }
   }, [id]);
 
-  useEffect(() => {
-    if (items.length > 0) {
-      const filtered = items.filter(item => {
-        // Status Filters (OR logic)
-        const isAnyStatusFilterActive = statusFilters.inv_expected || statusFilters.inv_unexpected || statusFilters.inv_lost;
-        if (isAnyStatusFilterActive) {
-          const matchesStatus = 
-            (statusFilters.inv_expected && item.inv_expected) ||
-            (statusFilters.inv_unexpected && item.inv_unexpected) ||
-            (statusFilters.inv_lost && item.inv_lost);
-          
-          if (!matchesStatus) return false;
-        }
-
-        // Text Filters
-        return Object.keys(filters).every(key => {
-          if (!filters[key]) return true;
-          const val = String(item[key] || item[getLabel(key)] || '').toLowerCase();
-          return val.includes(filters[key].toLowerCase());
-        });
+  const filteredItems = useMemo(() => {
+    return items.filter(item => {
+      const isAnyStatusFilterActive = statusFilters.inv_expected || statusFilters.inv_unexpected || statusFilters.inv_lost;
+      if (isAnyStatusFilterActive) {
+        const matchesStatus =
+          (statusFilters.inv_expected  && item.inv_expected)  ||
+          (statusFilters.inv_unexpected && item.inv_unexpected) ||
+          (statusFilters.inv_lost      && item.inv_lost);
+        if (!matchesStatus) return false;
+      }
+      return Object.keys(filters).every(key => {
+        if (!filters[key]) return true;
+        const val = String(item[key] || item[getLabel(key)] || '').toLowerCase();
+        return val.includes(filters[key].toLowerCase());
       });
-      setFilteredItems(filtered);
-    } else {
-      setFilteredItems([]);
-    }
-  }, [items, filters, statusFilters]);
+    });
+  }, [items, filters, statusFilters, labels]);
 
   const fetchData = async () => {
     try {
@@ -71,7 +61,6 @@ export default function InventoryItemsPage() {
         
         setItems(itemsData);
         setLabels(labelsData);
-        setFilteredItems(itemsData);
         if (invData && invData.length > 0) {
             setInventory(invData[0]);
         }
