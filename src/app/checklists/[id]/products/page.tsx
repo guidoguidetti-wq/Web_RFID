@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Pencil, Trash2, Plus, X, Save, ArrowLeft } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
+import { Pencil, Trash2, Plus, X, Save, ArrowLeft, Download } from 'lucide-react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 
@@ -19,6 +19,8 @@ interface ChecklistProduct {
 interface Product { product_id: number; fld01: string; }
 interface Checklist { chk_id: number; chk_code: string; chk_place: string; chk_zone: string; }
 
+type FilterMode = 'all' | 'expected' | 'unexpected';
+
 export default function ChecklistProductsPage() {
   const params = useParams();
   const checklistId = params.id as string;
@@ -29,6 +31,8 @@ export default function ChecklistProductsPage() {
   const [loading,      setLoading]      = useState(true);
   const [editingItem,  setEditingItem]  = useState<any>(null);
   const [newItem,      setNewItem]      = useState<any>(null);
+  const [filterText,   setFilterText]   = useState('');
+  const [filterMode,   setFilterMode]   = useState<FilterMode>('all');
 
   useEffect(() => { fetchAll(); }, [checklistId]);
 
@@ -80,11 +84,43 @@ export default function ChecklistProductsPage() {
     if (res.ok) fetchAll();
   };
 
+  const filteredData = useMemo(() => {
+    let rows = data;
+    if (filterText.trim()) {
+      const q = filterText.toLowerCase();
+      rows = rows.filter(r =>
+        `${r.ckp_product_id} - ${r.product_name ?? ''}`.toLowerCase().includes(q)
+      );
+    }
+    if (filterMode === 'expected')   rows = rows.filter(r => (r.ckp_qta_exp   ?? 0) > 0);
+    if (filterMode === 'unexpected') rows = rows.filter(r => (r.ckp_qta_unexp ?? 0) > 0);
+    return rows;
+  }, [data, filterText, filterMode]);
+
+  const handleExportCSV = () => {
+    const headers = ['Prodotto', 'Qtà', 'Qtà Exp', 'Qtà Unexp', 'Qtà Missing'];
+    const rows = filteredData.map(r => [
+      `${r.ckp_product_id} - ${r.product_name ?? ''}`,
+      r.ckp_qta        ?? '',
+      r.ckp_qta_exp    ?? '',
+      r.ckp_qta_unexp  ?? '',
+      r.ckp_qta_missing ?? '',
+    ]);
+    const csv = [headers, ...rows].map(row => row.join(';')).join('\r\n');
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href     = url;
+    a.download = `checklist_${checklistId}_products.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const numInput = (field: string, item: any, setItem: (v: any) => void) => (
     <input
       type="number"
       min={0}
-      className="w-full p-1.5 border border-blue-300 rounded text-sm"
+      className="w-full px-1 py-0.5 border border-blue-300 rounded text-xs"
       placeholder="0"
       value={item[field] ?? ''}
       onChange={e => setItem({ ...item, [field]: e.target.value === '' ? null : Number(e.target.value) })}
@@ -93,9 +129,9 @@ export default function ChecklistProductsPage() {
 
   const FormRow = ({ item, setItem, isNew }: { item: any; setItem: (v: any) => void; isNew: boolean }) => (
     <>
-      <td className="px-4 py-2">
+      <td className="px-2 py-1">
         <select
-          className="w-full p-1.5 border border-blue-300 rounded text-sm"
+          className="w-full px-1 py-0.5 border border-blue-300 rounded text-xs"
           value={item.ckp_product_id || ''}
           onChange={e => setItem({ ...item, ckp_product_id: Number(e.target.value) })}
         >
@@ -107,27 +143,43 @@ export default function ChecklistProductsPage() {
           ))}
         </select>
       </td>
-      <td className="px-4 py-2">{numInput('ckp_qta',         item, setItem)}</td>
-      <td className="px-4 py-2">{numInput('ckp_qta_exp',     item, setItem)}</td>
-      <td className="px-4 py-2">{numInput('ckp_qta_unexp',   item, setItem)}</td>
-      <td className="px-4 py-2">{numInput('ckp_qta_missing', item, setItem)}</td>
-      <td className="px-4 py-2 text-right">
-        <div className="flex justify-end gap-2">
+      <td className="px-2 py-1">{numInput('ckp_qta',         item, setItem)}</td>
+      <td className="px-2 py-1">{numInput('ckp_qta_exp',     item, setItem)}</td>
+      <td className="px-2 py-1">{numInput('ckp_qta_unexp',   item, setItem)}</td>
+      <td className="px-2 py-1">{numInput('ckp_qta_missing', item, setItem)}</td>
+      <td className="px-2 py-1 text-right">
+        <div className="flex justify-end gap-1">
           <button onClick={() => handleSave(item, isNew)} className="text-green-600 hover:text-green-800">
-            <Save size={18} />
+            <Save size={15} />
           </button>
           <button onClick={() => isNew ? setNewItem(null) : setEditingItem(null)} className="text-red-600 hover:text-red-800">
-            <X size={18} />
+            <X size={15} />
           </button>
         </div>
       </td>
     </>
   );
 
+  const modeBtn = (mode: FilterMode, label: string) => {
+    const active = filterMode === mode;
+    return (
+      <button
+        onClick={() => setFilterMode(mode)}
+        className={`px-3 py-1 rounded text-xs font-medium border transition-colors ${
+          active
+            ? 'bg-blue-600 text-white border-blue-600'
+            : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
+        }`}
+      >
+        {label}
+      </button>
+    );
+  };
+
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="min-h-screen bg-gray-50 p-4">
       {/* Header */}
-      <div className="flex items-center gap-4 mb-2">
+      <div className="flex items-center gap-4 mb-3">
         <Link href="/checklists" className="text-gray-500 hover:text-gray-700">
           <ArrowLeft size={22} />
         </Link>
@@ -141,52 +193,77 @@ export default function ChecklistProductsPage() {
             </p>
           )}
         </div>
-        <button
-          onClick={() => setNewItem({})}
-          className="ml-auto flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-        >
-          <Plus size={20} /> Aggiungi
-        </button>
+        <div className="ml-auto flex items-center gap-2">
+          <button
+            onClick={handleExportCSV}
+            className="flex items-center gap-1.5 bg-green-600 text-white px-3 py-2 rounded-lg hover:bg-green-700 transition-colors text-sm"
+          >
+            <Download size={16} /> CSV
+          </button>
+          <button
+            onClick={() => setNewItem({})}
+            className="flex items-center gap-1.5 bg-blue-600 text-white px-3 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm"
+          >
+            <Plus size={18} /> Aggiungi
+          </button>
+        </div>
       </div>
 
-      <div className="bg-white rounded-xl shadow overflow-hidden border border-gray-200 mt-6">
+      {/* Filters bar */}
+      <div className="flex items-center gap-3 mb-3 flex-wrap">
+        <input
+          type="text"
+          placeholder="Filtra prodotto..."
+          value={filterText}
+          onChange={e => setFilterText(e.target.value)}
+          className="border border-gray-300 rounded px-3 py-1 text-sm w-64 focus:outline-none focus:ring-1 focus:ring-blue-400"
+        />
+        <div className="flex items-center gap-1">
+          {modeBtn('all',        'Tutti')}
+          {modeBtn('expected',   'Expected > 0')}
+          {modeBtn('unexpected', 'Unexpected > 0')}
+        </div>
+        <span className="text-xs text-gray-400">{filteredData.length} righe</span>
+      </div>
+
+      <div className="bg-white rounded-xl shadow overflow-hidden border border-gray-200">
         <table className="w-full text-left border-collapse">
           <thead>
             <tr className="bg-gray-50">
-              <th className="px-4 py-3 text-sm font-semibold text-gray-600">Prodotto</th>
-              <th className="px-4 py-3 text-sm font-semibold text-gray-600 text-center">Qtà</th>
-              <th className="px-4 py-3 text-sm font-semibold text-gray-600 text-center">Qtà Exp</th>
-              <th className="px-4 py-3 text-sm font-semibold text-gray-600 text-center">Qtà Unexp</th>
-              <th className="px-4 py-3 text-sm font-semibold text-gray-600 text-center">Qtà Missing</th>
-              <th className="px-4 py-3 text-sm font-semibold text-gray-600 text-right">Azioni</th>
+              <th className="px-3 py-2 text-xs font-semibold text-gray-600">Prodotto</th>
+              <th className="px-3 py-2 text-xs font-semibold text-gray-600 text-center">Qtà</th>
+              <th className="px-3 py-2 text-xs font-semibold text-gray-600 text-center">Qtà Exp</th>
+              <th className="px-3 py-2 text-xs font-semibold text-gray-600 text-center">Qtà Unexp</th>
+              <th className="px-3 py-2 text-xs font-semibold text-gray-600 text-center">Qtà Missing</th>
+              <th className="px-3 py-2 text-xs font-semibold text-gray-600 text-right">Azioni</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-200">
+          <tbody className="divide-y divide-gray-100">
             {newItem && (
               <tr className="bg-blue-50">
                 <FormRow item={newItem} setItem={setNewItem} isNew={true} />
               </tr>
             )}
-            {data.map(item => (
+            {filteredData.map(item => (
               <tr key={item.ckp_id} className="hover:bg-gray-50 transition-colors">
                 {editingItem?.ckp_id === item.ckp_id ? (
                   <FormRow item={editingItem} setItem={setEditingItem} isNew={false} />
                 ) : (
                   <>
-                    <td className="px-4 py-3 text-sm text-gray-700 font-medium">
+                    <td className="px-3 py-1 text-xs text-gray-700 font-medium">
                       {item.ckp_product_id} - {item.product_name ?? ''}
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-700 text-center">{item.ckp_qta ?? '-'}</td>
-                    <td className="px-4 py-3 text-sm text-gray-700 text-center">{item.ckp_qta_exp ?? '-'}</td>
-                    <td className="px-4 py-3 text-sm text-gray-700 text-center">{item.ckp_qta_unexp ?? '-'}</td>
-                    <td className="px-4 py-3 text-sm text-gray-700 text-center">{item.ckp_qta_missing ?? '-'}</td>
-                    <td className="px-4 py-3 text-right">
-                      <div className="flex justify-end gap-3">
+                    <td className="px-3 py-1 text-xs text-gray-700 text-center">{item.ckp_qta ?? '-'}</td>
+                    <td className="px-3 py-1 text-xs text-gray-700 text-center">{item.ckp_qta_exp ?? '-'}</td>
+                    <td className="px-3 py-1 text-xs text-gray-700 text-center">{item.ckp_qta_unexp ?? '-'}</td>
+                    <td className="px-3 py-1 text-xs text-gray-700 text-center">{item.ckp_qta_missing ?? '-'}</td>
+                    <td className="px-3 py-1 text-right">
+                      <div className="flex justify-end gap-2">
                         <button onClick={() => setEditingItem({ ...item })} className="text-blue-600 hover:text-blue-800">
-                          <Pencil size={18} />
+                          <Pencil size={15} />
                         </button>
                         <button onClick={() => handleDelete(item.ckp_id)} className="text-red-600 hover:text-red-800">
-                          <Trash2 size={18} />
+                          <Trash2 size={15} />
                         </button>
                       </div>
                     </td>
@@ -196,9 +273,9 @@ export default function ChecklistProductsPage() {
             ))}
           </tbody>
         </table>
-        {loading && <div className="p-10 text-center text-gray-500">Caricamento...</div>}
-        {!loading && data.length === 0 && !newItem && (
-          <div className="p-10 text-center text-gray-500">Nessun prodotto nella checklist.</div>
+        {loading && <div className="p-8 text-center text-gray-500 text-sm">Caricamento...</div>}
+        {!loading && filteredData.length === 0 && !newItem && (
+          <div className="p-8 text-center text-gray-500 text-sm">Nessun prodotto trovato.</div>
         )}
       </div>
     </div>
