@@ -7,7 +7,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     const result = await query(
       `SELECT cp.ckp_id, cp.ckp_chl_id, cp.ckp_product_id,
               cp.ckp_qta, cp.ckp_qta_exp, cp.ckp_qta_unexp, cp.ckp_qta_missing,
-              p.fld01 AS product_name
+              p.fld01 AS product_fld01,
+              p.fld02 AS product_fld02,
+              p.fld03 AS product_fld03,
+              p.fldd01 AS product_fldd01
        FROM checklist_products cp
        LEFT JOIN "Products" p ON p.product_id = cp.ckp_product_id
        WHERE cp.ckp_chl_id = $1

@@ -13,7 +13,10 @@ interface ChecklistProduct {
   ckp_qta_exp: number | null;
   ckp_qta_unexp: number | null;
   ckp_qta_missing: number | null;
-  product_name: string;
+  product_fld01: string | null;
+  product_fld02: string | null;
+  product_fld03: string | null;
+  product_fldd01: number | null;
 }
 
 interface Product { product_id: number; fld01: string; }
@@ -21,18 +24,31 @@ interface Checklist { chk_id: number; chk_code: string; chk_place: string; chk_z
 
 type FilterMode = 'all' | 'expected' | 'unexpected';
 
+function productDescription(item: ChecklistProduct): string {
+  return [item.product_fld01, item.product_fld02, item.product_fld03, item.product_fldd01]
+    .filter(v => v !== null && v !== undefined && String(v).trim() !== '')
+    .join(' - ');
+}
+
+function calcMissing(item: ChecklistProduct): number | null {
+  if (item.ckp_qta === null) return null;
+  const exp   = item.ckp_qta_exp   ?? 0;
+  const unexp = item.ckp_qta_unexp ?? 0;
+  return item.ckp_qta - (exp + unexp);
+}
+
 export default function ChecklistProductsPage() {
   const params = useParams();
   const checklistId = params.id as string;
 
-  const [checklist,    setChecklist]    = useState<Checklist | null>(null);
-  const [data,         setData]         = useState<ChecklistProduct[]>([]);
-  const [products,     setProducts]     = useState<Product[]>([]);
-  const [loading,      setLoading]      = useState(true);
-  const [editingItem,  setEditingItem]  = useState<any>(null);
-  const [newItem,      setNewItem]      = useState<any>(null);
-  const [filterText,   setFilterText]   = useState('');
-  const [filterMode,   setFilterMode]   = useState<FilterMode>('all');
+  const [checklist,   setChecklist]   = useState<Checklist | null>(null);
+  const [data,        setData]        = useState<ChecklistProduct[]>([]);
+  const [products,    setProducts]    = useState<Product[]>([]);
+  const [loading,     setLoading]     = useState(true);
+  const [editingItem, setEditingItem] = useState<any>(null);
+  const [newItem,     setNewItem]     = useState<any>(null);
+  const [filterText,  setFilterText]  = useState('');
+  const [filterMode,  setFilterMode]  = useState<FilterMode>('all');
 
   useEffect(() => { fetchAll(); }, [checklistId]);
 
@@ -58,8 +74,7 @@ export default function ChecklistProductsPage() {
 
   const handleSave = async (item: any, isNew: boolean) => {
     try {
-      const url = `/api/checklists/${checklistId}/products`;
-      const res = await fetch(url, {
+      const res = await fetch(`/api/checklists/${checklistId}/products`, {
         method: isNew ? 'POST' : 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(item),
@@ -89,7 +104,7 @@ export default function ChecklistProductsPage() {
     if (filterText.trim()) {
       const q = filterText.toLowerCase();
       rows = rows.filter(r =>
-        `${r.ckp_product_id} - ${r.product_name ?? ''}`.toLowerCase().includes(q)
+        (`${r.ckp_product_id} ${productDescription(r)}`).toLowerCase().includes(q)
       );
     }
     if (filterMode === 'expected')   rows = rows.filter(r => (r.ckp_qta_exp   ?? 0) > 0);
@@ -98,14 +113,18 @@ export default function ChecklistProductsPage() {
   }, [data, filterText, filterMode]);
 
   const handleExportCSV = () => {
-    const headers = ['Prodotto', 'Qtà', 'Qtà Exp', 'Qtà Unexp', 'Qtà Missing'];
-    const rows = filteredData.map(r => [
-      `${r.ckp_product_id} - ${r.product_name ?? ''}`,
-      r.ckp_qta        ?? '',
-      r.ckp_qta_exp    ?? '',
-      r.ckp_qta_unexp  ?? '',
-      r.ckp_qta_missing ?? '',
-    ]);
+    const headers = ['ID Prodotto', 'Descrizione Prodotto', 'Qtà', 'Qtà Exp', 'Qtà Unexp', 'Qtà Missing'];
+    const rows = filteredData.map(r => {
+      const missing = calcMissing(r);
+      return [
+        r.ckp_product_id,
+        productDescription(r),
+        r.ckp_qta        ?? '',
+        r.ckp_qta_exp    ?? '',
+        r.ckp_qta_unexp  ?? '',
+        missing          ?? '',
+      ];
+    });
     const csv = [headers, ...rows].map(row => row.join(';')).join('\r\n');
     const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
     const url  = URL.createObjectURL(blob);
@@ -129,6 +148,7 @@ export default function ChecklistProductsPage() {
 
   const FormRow = ({ item, setItem, isNew }: { item: any; setItem: (v: any) => void; isNew: boolean }) => (
     <>
+      <td className="px-2 py-1 text-xs text-gray-500">{item.ckp_product_id || '—'}</td>
       <td className="px-2 py-1">
         <select
           className="w-full px-1 py-0.5 border border-blue-300 rounded text-xs"
@@ -143,10 +163,10 @@ export default function ChecklistProductsPage() {
           ))}
         </select>
       </td>
-      <td className="px-2 py-1">{numInput('ckp_qta',         item, setItem)}</td>
-      <td className="px-2 py-1">{numInput('ckp_qta_exp',     item, setItem)}</td>
-      <td className="px-2 py-1">{numInput('ckp_qta_unexp',   item, setItem)}</td>
-      <td className="px-2 py-1">{numInput('ckp_qta_missing', item, setItem)}</td>
+      <td className="px-2 py-1">{numInput('ckp_qta',       item, setItem)}</td>
+      <td className="px-2 py-1">{numInput('ckp_qta_exp',   item, setItem)}</td>
+      <td className="px-2 py-1">{numInput('ckp_qta_unexp', item, setItem)}</td>
+      <td className="px-2 py-1 text-xs text-red-500 text-center">—</td>
       <td className="px-2 py-1 text-right">
         <div className="flex justify-end gap-1">
           <button onClick={() => handleSave(item, isNew)} className="text-green-600 hover:text-green-800">
@@ -160,15 +180,14 @@ export default function ChecklistProductsPage() {
     </>
   );
 
-  const modeBtn = (mode: FilterMode, label: string) => {
+  // Filter mode button styles
+  const modeBtn = (mode: FilterMode, label: string, activeClass: string, inactiveClass: string) => {
     const active = filterMode === mode;
     return (
       <button
         onClick={() => setFilterMode(mode)}
         className={`px-3 py-1 rounded text-xs font-medium border transition-colors ${
-          active
-            ? 'bg-blue-600 text-white border-blue-600'
-            : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
+          active ? activeClass : inactiveClass
         }`}
       >
         {label}
@@ -219,9 +238,15 @@ export default function ChecklistProductsPage() {
           className="border border-gray-300 rounded px-3 py-1 text-sm w-64 focus:outline-none focus:ring-1 focus:ring-blue-400"
         />
         <div className="flex items-center gap-1">
-          {modeBtn('all',        'Tutti')}
-          {modeBtn('expected',   'Expected > 0')}
-          {modeBtn('unexpected', 'Unexpected > 0')}
+          {modeBtn('all',        'Tutti',
+            'bg-gray-500 text-white border-gray-500',
+            'bg-white text-gray-600 border-gray-300 hover:bg-gray-100')}
+          {modeBtn('expected',   'Expected > 0',
+            'bg-green-600 text-white border-green-600',
+            'bg-white text-green-700 border-green-400 hover:bg-green-50')}
+          {modeBtn('unexpected', 'Unexpected > 0',
+            'bg-orange-500 text-white border-orange-500',
+            'bg-white text-orange-600 border-orange-400 hover:bg-orange-50')}
         </div>
         <span className="text-xs text-gray-400">{filteredData.length} righe</span>
       </div>
@@ -230,11 +255,12 @@ export default function ChecklistProductsPage() {
         <table className="w-full text-left border-collapse">
           <thead>
             <tr className="bg-gray-50">
-              <th className="px-3 py-2 text-xs font-semibold text-gray-600">Prodotto</th>
+              <th className="px-3 py-2 text-xs font-semibold text-gray-600">ID Prodotto</th>
+              <th className="px-3 py-2 text-xs font-semibold text-gray-600">Descrizione Prodotto</th>
               <th className="px-3 py-2 text-xs font-semibold text-gray-600 text-center">Qtà</th>
-              <th className="px-3 py-2 text-xs font-semibold text-gray-600 text-center">Qtà Exp</th>
-              <th className="px-3 py-2 text-xs font-semibold text-gray-600 text-center">Qtà Unexp</th>
-              <th className="px-3 py-2 text-xs font-semibold text-gray-600 text-center">Qtà Missing</th>
+              <th className="px-3 py-2 text-xs font-semibold text-green-700 text-center">Qtà Exp</th>
+              <th className="px-3 py-2 text-xs font-semibold text-orange-600 text-center">Qtà Unexp</th>
+              <th className="px-3 py-2 text-xs font-semibold text-red-600 text-center">Qtà Missing</th>
               <th className="px-3 py-2 text-xs font-semibold text-gray-600 text-right">Azioni</th>
             </tr>
           </thead>
@@ -244,33 +270,35 @@ export default function ChecklistProductsPage() {
                 <FormRow item={newItem} setItem={setNewItem} isNew={true} />
               </tr>
             )}
-            {filteredData.map(item => (
-              <tr key={item.ckp_id} className="hover:bg-gray-50 transition-colors">
-                {editingItem?.ckp_id === item.ckp_id ? (
-                  <FormRow item={editingItem} setItem={setEditingItem} isNew={false} />
-                ) : (
-                  <>
-                    <td className="px-3 py-1 text-xs text-gray-700 font-medium">
-                      {item.ckp_product_id} - {item.product_name ?? ''}
-                    </td>
-                    <td className="px-3 py-1 text-xs text-gray-700 text-center">{item.ckp_qta ?? '-'}</td>
-                    <td className="px-3 py-1 text-xs text-gray-700 text-center">{item.ckp_qta_exp ?? '-'}</td>
-                    <td className="px-3 py-1 text-xs text-gray-700 text-center">{item.ckp_qta_unexp ?? '-'}</td>
-                    <td className="px-3 py-1 text-xs text-gray-700 text-center">{item.ckp_qta_missing ?? '-'}</td>
-                    <td className="px-3 py-1 text-right">
-                      <div className="flex justify-end gap-2">
-                        <button onClick={() => setEditingItem({ ...item })} className="text-blue-600 hover:text-blue-800">
-                          <Pencil size={15} />
-                        </button>
-                        <button onClick={() => handleDelete(item.ckp_id)} className="text-red-600 hover:text-red-800">
-                          <Trash2 size={15} />
-                        </button>
-                      </div>
-                    </td>
-                  </>
-                )}
-              </tr>
-            ))}
+            {filteredData.map(item => {
+              const missing = calcMissing(item);
+              return (
+                <tr key={item.ckp_id} className="hover:bg-gray-50 transition-colors">
+                  {editingItem?.ckp_id === item.ckp_id ? (
+                    <FormRow item={editingItem} setItem={setEditingItem} isNew={false} />
+                  ) : (
+                    <>
+                      <td className="px-3 py-1 text-xs text-gray-500 font-mono">{item.ckp_product_id}</td>
+                      <td className="px-3 py-1 text-xs text-gray-700 font-medium">{productDescription(item)}</td>
+                      <td className="px-3 py-1 text-xs text-gray-700 text-center">{item.ckp_qta ?? '-'}</td>
+                      <td className="px-3 py-1 text-xs text-green-700 text-center font-medium">{item.ckp_qta_exp ?? '-'}</td>
+                      <td className="px-3 py-1 text-xs text-orange-600 text-center font-medium">{item.ckp_qta_unexp ?? '-'}</td>
+                      <td className="px-3 py-1 text-xs text-red-600 text-center font-bold">{missing ?? '-'}</td>
+                      <td className="px-3 py-1 text-right">
+                        <div className="flex justify-end gap-2">
+                          <button onClick={() => setEditingItem({ ...item })} className="text-blue-600 hover:text-blue-800">
+                            <Pencil size={15} />
+                          </button>
+                          <button onClick={() => handleDelete(item.ckp_id)} className="text-red-600 hover:text-red-800">
+                            <Trash2 size={15} />
+                          </button>
+                        </div>
+                      </td>
+                    </>
+                  )}
+                </tr>
+              );
+            })}
           </tbody>
         </table>
         {loading && <div className="p-8 text-center text-gray-500 text-sm">Caricamento...</div>}

@@ -16,25 +16,20 @@ export default function Header() {
   if (pathname === '/login' || pathname.startsWith('/qr')) return null;
 
   return (
-    <header className="bg-white text-black shadow-md transition-all duration-300 h-40 flex items-center justify-between px-6 border-b border-gray-200">
+    <header className="bg-white text-black shadow-md transition-all duration-300 h-16 flex items-center justify-between px-6 border-b border-gray-200">
       {/* Left: Home */}
       <div className="flex items-center w-1/3">
         {pathname !== '/login' && (
           <Link href="/menu" className="flex items-center gap-2 hover:text-blue-600 transition-colors">
-            <Home size={28} />
-            <span className="font-semibold text-lg">Home</span>
+            <Home size={24} />
+            <span className="font-semibold text-base">Home</span>
           </Link>
         )}
       </div>
 
-      {/* Center: Logo and Title */}
+      {/* Center: Logo only */}
       <div className="flex justify-center w-1/3">
-        <div className="flex flex-col items-center gap-3">
-          <img src="/RFID_System_Logo.png" alt="RFID System Logo" className="h-20 w-auto drop-shadow-lg" />
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-            RFID Management System
-          </h1>
-        </div>
+        <img src="/RFID_System_Logo.png" alt="RFID System Logo" className="h-10 w-auto drop-shadow-lg" />
       </div>
 
       {/* Right: Logout */}
