@@ -13,6 +13,7 @@ export default function InventoryItemsPage() {
   const [inventory, setInventory] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState<{[key: string]: string}>({});
+  const [draftFilters, setDraftFilters] = useState<{[key: string]: string}>({});
 
   // Status Filter States (true = filter for true, false/null = no filter)
   // Or 3-state? Let's implement simple On/Off as requested (Show Only True vs Show All).
@@ -79,8 +80,12 @@ export default function InventoryItemsPage() {
     return labelObj ? (labelObj.pr_lab || labelObj.pr_des || key) : key;
   };
 
-  const handleFilterChange = (key: string, value: string) => {
-    setFilters(prev => ({ ...prev, [key]: value }));
+  const handleDraftChange = (key: string, value: string) => {
+    setDraftFilters(prev => ({ ...prev, [key]: value }));
+  };
+
+  const commitFilter = (key: string) => {
+    setFilters(prev => ({ ...prev, [key]: draftFilters[key] ?? '' }));
   };
 
   const toggleStatusFilter = (key: 'inv_expected' | 'inv_unexpected' | 'inv_lost') => {
@@ -175,23 +180,25 @@ export default function InventoryItemsPage() {
             <thead>
               <tr className="bg-white border-b border-gray-200">
                 {columns.map(col => (
-                  <th key={col} className="px-4 py-4 text-sm font-bold text-gray-700 align-top">
-                     <div className="flex flex-col gap-2">
+                  <th key={col} className={`px-3 py-3 text-xs font-bold text-gray-700 align-top ${col === 'EPC' ? 'min-w-[260px]' : ''}`}>
+                    <div className="flex flex-col gap-1.5">
                       <span>{getLabel(col)}</span>
-                      <input 
-                        type="text" 
-                        placeholder="Filtra" 
-                        className="text-xs font-normal p-1 border border-gray-300 rounded w-full"
-                        value={filters[col] || ''}
-                        onChange={(e) => handleFilterChange(col, e.target.value)}
+                      <input
+                        type="text"
+                        placeholder="Filtra"
+                        className="text-xs font-normal px-1.5 py-0.5 border border-gray-300 rounded w-full"
+                        value={draftFilters[col] ?? ''}
+                        onChange={e => handleDraftChange(col, e.target.value)}
+                        onBlur={() => commitFilter(col)}
+                        onKeyDown={e => { if (e.key === 'Enter') { commitFilter(col); (e.target as HTMLInputElement).blur(); } }}
                       />
                     </div>
                   </th>
                 ))}
                 
                 {/* Status Headers with Toggle Buttons */}
-                <th className="px-4 py-4 text-sm font-bold text-gray-700 w-16 text-center align-top">
-                   <div className="flex flex-col gap-2 items-center">
+                <th className="px-3 py-3 text-xs font-bold text-gray-700 w-14 text-center align-top">
+                   <div className="flex flex-col gap-1.5 items-center">
                       <span className="text-green-600">Exp</span>
                       <button 
                         onClick={() => toggleStatusFilter('inv_expected')}
@@ -206,8 +213,8 @@ export default function InventoryItemsPage() {
                       </button>
                    </div>
                 </th>
-                <th className="px-4 py-4 text-sm font-bold text-gray-700 w-16 text-center align-top">
-                   <div className="flex flex-col gap-2 items-center">
+                <th className="px-3 py-3 text-xs font-bold text-gray-700 w-14 text-center align-top">
+                   <div className="flex flex-col gap-1.5 items-center">
                       <span className="text-yellow-600">UnExp</span>
                       <button 
                         onClick={() => toggleStatusFilter('inv_unexpected')}
@@ -222,8 +229,8 @@ export default function InventoryItemsPage() {
                       </button>
                    </div>
                 </th>
-                <th className="px-4 py-4 text-sm font-bold text-gray-700 w-16 text-center align-top">
-                   <div className="flex flex-col gap-2 items-center">
+                <th className="px-3 py-3 text-xs font-bold text-gray-700 w-14 text-center align-top">
+                   <div className="flex flex-col gap-1.5 items-center">
                       <span className="text-red-600">Lost</span>
                       <button 
                         onClick={() => toggleStatusFilter('inv_lost')}
@@ -244,18 +251,18 @@ export default function InventoryItemsPage() {
               {filteredItems.map((item, idx) => (
                 <tr key={idx}>
                    {columns.map(col => (
-                      <td key={col} className="px-4 py-2 text-sm text-gray-700">
+                      <td key={col} className="px-3 py-1 text-xs text-gray-700">
                         {item[col] || item[getLabel(col)] || '-'}
                       </td>
                    ))}
-                   <td className="px-4 py-2 text-center">
-                      {item.inv_expected ? <CheckCircle size={18} className="text-green-500 mx-auto" /> : <span className="text-gray-200">-</span>}
+                   <td className="px-3 py-1 text-center">
+                      {item.inv_expected ? <CheckCircle size={15} className="text-green-500 mx-auto" /> : <span className="text-gray-200 text-xs">-</span>}
                    </td>
-                   <td className="px-4 py-2 text-center">
-                      {item.inv_unexpected ? <AlertTriangle size={18} className="text-yellow-500 mx-auto" /> : <span className="text-gray-200">-</span>}
+                   <td className="px-3 py-1 text-center">
+                      {item.inv_unexpected ? <AlertTriangle size={15} className="text-yellow-500 mx-auto" /> : <span className="text-gray-200 text-xs">-</span>}
                    </td>
-                   <td className="px-4 py-2 text-center">
-                      {item.inv_lost ? <XCircle size={18} className="text-red-500 mx-auto" /> : <span className="text-gray-200">-</span>}
+                   <td className="px-3 py-1 text-center">
+                      {item.inv_lost ? <XCircle size={15} className="text-red-500 mx-auto" /> : <span className="text-gray-200 text-xs">-</span>}
                    </td>
                 </tr>
               ))}
