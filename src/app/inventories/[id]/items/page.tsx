@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { ArrowLeft, Layers, Download, CheckCircle, AlertTriangle, XCircle, Filter } from 'lucide-react';
 
@@ -13,7 +13,6 @@ export default function InventoryItemsPage() {
   const [inventory, setInventory] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState<{[key: string]: string}>({});
-  const [draftFilters, setDraftFilters] = useState<{[key: string]: string}>({});
 
   // Status Filter States (true = filter for true, false/null = no filter)
   // Or 3-state? Let's implement simple On/Off as requested (Show Only True vs Show All).
@@ -80,12 +79,8 @@ export default function InventoryItemsPage() {
     return labelObj ? (labelObj.pr_lab || labelObj.pr_des || key) : key;
   };
 
-  const handleDraftChange = (key: string, value: string) => {
-    setDraftFilters(prev => ({ ...prev, [key]: value }));
-  };
-
-  const commitFilter = (key: string) => {
-    setFilters(prev => ({ ...prev, [key]: draftFilters[key] ?? '' }));
+  const commitFilter = (key: string, value: string) => {
+    setFilters(prev => ({ ...prev, [key]: value }));
   };
 
   const toggleStatusFilter = (key: 'inv_expected' | 'inv_unexpected' | 'inv_lost') => {
@@ -180,17 +175,16 @@ export default function InventoryItemsPage() {
             <thead>
               <tr className="bg-white border-b border-gray-200">
                 {columns.map(col => (
-                  <th key={col} className={`px-3 py-3 text-xs font-bold text-gray-700 align-top ${col === 'EPC' ? 'min-w-[260px]' : ''}`}>
+                  <th key={col} className={`px-3 py-3 text-xs font-bold text-gray-700 align-top ${col === 'EPC' ? 'min-w-[280px]' : 'min-w-[100px]'}`}>
                     <div className="flex flex-col gap-1.5">
                       <span>{getLabel(col)}</span>
                       <input
                         type="text"
                         placeholder="Filtra"
                         className="text-xs font-normal px-1.5 py-0.5 border border-gray-300 rounded w-full"
-                        value={draftFilters[col] ?? ''}
-                        onChange={e => handleDraftChange(col, e.target.value)}
-                        onBlur={() => commitFilter(col)}
-                        onKeyDown={e => { if (e.key === 'Enter') { commitFilter(col); (e.target as HTMLInputElement).blur(); } }}
+                        defaultValue={filters[col] ?? ''}
+                        onBlur={e => commitFilter(col, e.target.value)}
+                        onKeyDown={e => { if (e.key === 'Enter') { commitFilter(col, e.currentTarget.value); e.currentTarget.blur(); } }}
                       />
                     </div>
                   </th>

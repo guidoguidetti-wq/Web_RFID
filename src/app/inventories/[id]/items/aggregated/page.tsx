@@ -13,7 +13,6 @@ export default function AggregatedInventoryItemsPage() {
   const [inventory, setInventory] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState<{[key: string]: string}>({});
-  const [draftFilters, setDraftFilters] = useState<{[key: string]: string}>({});
   const [viewMode, setViewMode] = useState<'All' | 'Expected' | 'Unexpected' | 'Lost'>('All');
 
   const columns = ['Product ID', 'fld01', 'fld02', 'fld03', 'fldd01', 'fldd02', 'Qty'];
@@ -80,12 +79,8 @@ export default function AggregatedInventoryItemsPage() {
     }
   };
 
-  const handleDraftChange = (key: string, value: string) => {
-    setDraftFilters(prev => ({ ...prev, [key]: value }));
-  };
-
-  const commitFilter = (key: string) => {
-    setFilters(prev => ({ ...prev, [key]: draftFilters[key] ?? '' }));
+  const commitFilter = (key: string, value: string) => {
+    setFilters(prev => ({ ...prev, [key]: value }));
   };
 
   const totalQty = filteredItems.reduce((acc, curr) => acc + (Number(getDisplayedQty(curr)) || 0), 0);
@@ -166,17 +161,16 @@ export default function AggregatedInventoryItemsPage() {
             <thead>
               <tr className="bg-gray-100 border-b border-gray-200">
                 {columns.map(col => (
-                  <th key={col} className="px-3 py-3 text-xs font-bold text-gray-700 align-top">
+                  <th key={col} className="px-3 py-3 text-xs font-bold text-gray-700 align-top min-w-[100px]">
                     <div className="flex flex-col gap-1.5">
                       <span>{getLabel(col)}</span>
                       <input
                         type="text"
                         placeholder="Filtra"
                         className="text-xs font-normal px-1.5 py-0.5 border border-gray-300 rounded w-full"
-                        value={draftFilters[col] ?? ''}
-                        onChange={e => handleDraftChange(col, e.target.value)}
-                        onBlur={() => commitFilter(col)}
-                        onKeyDown={e => { if (e.key === 'Enter') { commitFilter(col); (e.target as HTMLInputElement).blur(); } }}
+                        defaultValue={filters[col] ?? ''}
+                        onBlur={e => commitFilter(col, e.target.value)}
+                        onKeyDown={e => { if (e.key === 'Enter') { commitFilter(col, e.currentTarget.value); e.currentTarget.blur(); } }}
                       />
                     </div>
                   </th>
