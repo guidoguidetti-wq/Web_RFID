@@ -66,7 +66,7 @@ export default function ItemsPage() {
     return new Date(isoString).toLocaleString();
   };
 
-  const columns = [
+  const columns: { key: string; label: string; renderKey?: string }[] = [
     { key: 'item_id',         label: 'EPC' },
     { key: 'item_product_id', label: 'ID Prodotto' },
     { key: 'fld01',           label: getLabel('fld01') },
@@ -75,8 +75,8 @@ export default function ItemsPage() {
     { key: 'fldd01',          label: getLabel('fldd01') },
     { key: 'date_creation',   label: 'Data Creazione' },
     { key: 'date_lastseen',   label: 'Ultima Lettura' },
-    { key: 'place_last',      label: 'Ultimo Luogo' },
-    { key: 'zone_last',       label: 'Ultima Zona' },
+    { key: 'place_last', renderKey: 'place_last_display', label: 'Ultimo Luogo' },
+    { key: 'zone_last',  renderKey: 'zone_last_display',  label: 'Ultima Zona' },
   ];
 
   const colWidth: Record<string, string> = {
@@ -88,8 +88,8 @@ export default function ItemsPage() {
     fldd01:          'min-w-[90px]',
     date_creation:   'min-w-[120px]',
     date_lastseen:   'min-w-[120px]',
-    place_last:      'min-w-[90px]',
-    zone_last:       'min-w-[90px]',
+    place_last:      'min-w-[160px]',
+    zone_last:       'min-w-[160px]',
   };
 
   if (loading) return <div className="p-10 text-center text-gray-500 text-xs">Caricamento items...</div>;
@@ -204,16 +204,21 @@ export default function ItemsPage() {
               ) : (
                 items.map((item, idx) => (
                   <tr key={idx} className="hover:bg-gray-50">
-                    {columns.map(col => (
-                      <td
-                        key={col.key}
-                        className="px-3 py-1 text-xs text-gray-700 truncate overflow-hidden"
-                        style={{ maxWidth: col.key === 'item_id' ? '220px' : '120px' }}
-                        title={col.key.includes('date') ? formatDate(item[col.key]) : String(item[col.key] || '')}
-                      >
-                        {col.key.includes('date') ? formatDate(item[col.key]) : (item[col.key] || '-')}
-                      </td>
-                    ))}
+                    {columns.map(col => {
+                      const displayKey = col.renderKey ?? col.key;
+                      const rawVal = item[displayKey] ?? item[col.key];
+                      const displayVal = col.key.includes('date') ? formatDate(rawVal) : (rawVal || '-');
+                      return (
+                        <td
+                          key={col.key}
+                          className="px-3 py-1 text-xs text-gray-700 truncate overflow-hidden"
+                          style={{ maxWidth: col.key === 'item_id' ? '220px' : '160px' }}
+                          title={String(rawVal || '')}
+                        >
+                          {displayVal}
+                        </td>
+                      );
+                    })}
                     <td className="px-3 py-1">
                       <button
                         onClick={() => router.push(`/items/${encodeURIComponent(item.item_id)}/movements`)}

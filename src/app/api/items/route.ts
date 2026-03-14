@@ -49,6 +49,8 @@ export async function GET(req: NextRequest) {
       `SELECT COUNT(*)::int as total
        FROM "Items" i
        LEFT JOIN "Products" p ON i.item_product_id = p.product_id
+       LEFT JOIN "Places" pl ON i.place_last = pl.place_id
+       LEFT JOIN "Zones" zl ON i.zone_last = zl.zone_id
        ${whereSQL}`,
       queryParams
     );
@@ -57,9 +59,18 @@ export async function GET(req: NextRequest) {
     // Get paginated items with filters
     queryParams.push(limit, offset);
     const sql = `
-      SELECT i.*, p.fld01, p.fld02, p.fld03, p.fldd01
+      SELECT i.*,
+        p.fld01, p.fld02, p.fld03, p.fldd01,
+        CASE WHEN i.place_last IS NOT NULL AND pl.place_name IS NOT NULL
+             THEN i.place_last || ' - ' || pl.place_name
+             ELSE COALESCE(i.place_last, '') END as place_last_display,
+        CASE WHEN i.zone_last IS NOT NULL AND zl.zone_name IS NOT NULL
+             THEN i.zone_last || ' - ' || zl.zone_name
+             ELSE COALESCE(i.zone_last, '') END as zone_last_display
       FROM "Items" i
       LEFT JOIN "Products" p ON i.item_product_id = p.product_id
+      LEFT JOIN "Places" pl ON i.place_last = pl.place_id
+      LEFT JOIN "Zones" zl ON i.zone_last = zl.zone_id
       ${whereSQL}
       ORDER BY i.date_creation DESC
       LIMIT $${paramIndex} OFFSET $${paramIndex + 1}

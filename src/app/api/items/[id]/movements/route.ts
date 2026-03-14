@@ -12,13 +12,17 @@ export async function GET(
     // based on the data inspection ('WHS', 'TST').
     
     const sql = `
-      SELECT 
-        p.place_name as "Place",
-        z.zone_name as "Zone",
+      SELECT
+        CASE WHEN m.mov_dest_place IS NOT NULL AND p.place_name IS NOT NULL
+             THEN m.mov_dest_place || ' - ' || p.place_name
+             ELSE COALESCE(m.mov_dest_place, '') END as "Place",
+        CASE WHEN m.mov_dest_zone IS NOT NULL AND z.zone_name IS NOT NULL
+             THEN m.mov_dest_zone || ' - ' || z.zone_name
+             ELSE COALESCE(m.mov_dest_zone, '') END as "Zone",
         m.mov_timestamp,
         m.mov_user,
         m.mov_ref,
-        m.mov_readscount as mov_readcount, 
+        m.mov_readscount as mov_readcount,
         m.mov_rssiavg
       FROM "Movements" m
       LEFT JOIN "Places" p ON m.mov_dest_place = p.place_id
