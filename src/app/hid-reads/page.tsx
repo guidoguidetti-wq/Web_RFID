@@ -77,7 +77,11 @@ export default function HidReadsPage() {
     }
 
     const results = await Promise.all(epcs.map(fetchEpc));
-    setReadings(prev => [...results, ...prev]);
+    setReadings(prev => {
+      const existingEpcs = new Set(prev.map(r => r.epc));
+      const newResults = results.filter(r => !existingEpcs.has(r.epc));
+      return [...newResults, ...prev];
+    });
     focusInput();
   };
 
