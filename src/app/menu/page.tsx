@@ -12,6 +12,7 @@ import {
   ListChecks,
   ScanLine,
   ShieldCheck,
+  Wrench,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -27,6 +28,7 @@ const menuItems = [
   { name: 'CheckLists', icon: ListChecks, href: '/checklists', color: 'from-cyan-500 to-cyan-600' },
   { name: 'Letture HID', icon: ScanLine, href: '/hid-reads', color: 'from-rose-500 to-rose-600' },
   { name: 'Landing Bett', icon: ShieldCheck, href: '/bett', color: 'from-sky-500 to-blue-600' },
+  { name: 'Work Orders',  icon: Wrench,      href: '/work-orders', color: 'from-violet-500 to-purple-600' },
 ];
 
 export default function MenuPage() {
