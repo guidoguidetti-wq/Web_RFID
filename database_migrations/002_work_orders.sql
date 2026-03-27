@@ -40,6 +40,7 @@ CREATE TABLE work_orders_attach (
     att_mime       VARCHAR(100),
     att_size       INTEGER,
     att_url        TEXT         NOT NULL,
+    att_note       VARCHAR(500),
     att_created_at TIMESTAMP    NOT NULL DEFAULT NOW(),
     FOREIGN KEY (att_wo_id) REFERENCES work_orders(wo_id) ON DELETE CASCADE
 );

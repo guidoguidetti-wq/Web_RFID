@@ -38,11 +38,12 @@ export async function GET(req: NextRequest) {
       params
     );
 
-    // Conta allegati separatamente (la tabella potrebbe non esistere ancora)
+    const ids = dataRes.rows.map((r: any) => r.wo_id);
+
+    // Conta allegati (tabella potrebbe non esistere ancora → ignora errore)
     let attachCounts: Record<number, number> = {};
-    try {
-      const ids = dataRes.rows.map((r: any) => r.wo_id);
-      if (ids.length > 0) {
+    if (ids.length > 0) {
+      try {
         const acRes = await query(
           `SELECT att_wo_id, COUNT(*)::int AS cnt
            FROM work_orders_attach
@@ -51,14 +52,28 @@ export async function GET(req: NextRequest) {
           [ids]
         );
         acRes.rows.forEach((r: any) => { attachCounts[r.att_wo_id] = r.cnt; });
-      }
-    } catch {
-      // work_orders_attach non ancora creata: ignora
+      } catch { /* tabella non ancora creata */ }
+    }
+
+    // Conta righe raws per work order
+    let rawsCounts: Record<number, number> = {};
+    if (ids.length > 0) {
+      try {
+        const rcRes = await query(
+          `SELECT wor_wo_id, COUNT(*)::int AS cnt
+           FROM work_orders_raws
+           WHERE wor_wo_id = ANY($1::int[])
+           GROUP BY wor_wo_id`,
+          [ids]
+        );
+        rcRes.rows.forEach((r: any) => { rawsCounts[r.wor_wo_id] = r.cnt; });
+      } catch { /* tabella non ancora creata */ }
     }
 
     const workOrders = dataRes.rows.map((r: any) => ({
       ...r,
       attach_count: attachCounts[r.wo_id] ?? 0,
+      raws_count:   rawsCounts[r.wo_id]   ?? 0,
     }));
 
     return NextResponse.json({

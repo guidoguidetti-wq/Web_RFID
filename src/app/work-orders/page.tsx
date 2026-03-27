@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import { upload } from '@vercel/blob/client';
 import {
   Plus, Pencil, Trash2, Paperclip, X, Upload,
   FileText, Image as ImageIcon, ChevronLeft, ChevronRight,
@@ -17,13 +18,11 @@ interface WorkOrder {
   wo_description: string | null;
   wo_status: string;
   wo_priority: string;
-  wo_item_id: string | null;
-  wo_assigned_to: string | null;
-  wo_due_date: string | null;
   wo_notes: string | null;
   wo_created_at: string;
   wo_updated_at: string;
   attach_count: number;
+  raws_count: number;
 }
 
 interface Attachment {
@@ -34,6 +33,7 @@ interface Attachment {
   att_mime: string;
   att_size: number;
   att_url: string;
+  att_note: string | null;
   att_created_at: string;
 }
 
@@ -63,8 +63,7 @@ const STATUS_ICON: Record<string, React.ReactNode> = {
 
 const EMPTY_FORM = {
   wo_number: '', wo_title: '', wo_description: '',
-  wo_status: 'APERTO', wo_priority: 'NORMALE',
-  wo_item_id: '', wo_assigned_to: '', wo_due_date: '', wo_notes: '',
+  wo_status: 'APERTO', wo_priority: 'NORMALE', wo_notes: '',
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -73,6 +72,7 @@ function formatDate(iso: string | null) {
   return new Date(iso).toLocaleDateString('it-IT');
 }
 function formatSize(bytes: number) {
+  if (!bytes) return '';
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1048576) return `${(bytes / 1024).toFixed(1)} KB`;
   return `${(bytes / 1048576).toFixed(1)} MB`;
@@ -81,10 +81,10 @@ function formatSize(bytes: number) {
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function WorkOrdersPage() {
   const router = useRouter();
-  const [orders, setOrders]       = useState<WorkOrder[]>([]);
+  const [orders, setOrders]         = useState<WorkOrder[]>([]);
   const [pagination, setPagination] = useState({ page: 1, limit: 50, total: 0, totalPages: 0 });
-  const [filters, setFilters]     = useState<Record<string, string>>({});
-  const [loading, setLoading]     = useState(true);
+  const [filters, setFilters]       = useState<Record<string, string>>({});
+  const [loading, setLoading]       = useState(true);
 
   // Modal add/edit
   const [modalOpen, setModalOpen] = useState(false);
@@ -94,12 +94,14 @@ export default function WorkOrdersPage() {
   const [formError, setFormError] = useState('');
 
   // Attachments panel
-  const [attachWo, setAttachWo]         = useState<WorkOrder | null>(null);
-  const [attachments, setAttachments]   = useState<Attachment[]>([]);
+  const [attachWo, setAttachWo]           = useState<WorkOrder | null>(null);
+  const [attachments, setAttachments]     = useState<Attachment[]>([]);
   const [attachLoading, setAttachLoading] = useState(false);
-  const [uploading, setUploading]       = useState(false);
-  const [uploadError, setUploadError]   = useState('');
-  const [lightbox, setLightbox]         = useState<string | null>(null);
+  const [uploading, setUploading]         = useState(false);
+  const [uploadError, setUploadError]     = useState('');
+  const [uploadNote, setUploadNote]       = useState('');
+  const [uploadProgress, setUploadProgress] = useState('');
+  const [lightbox, setLightbox]           = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Delete confirm
@@ -145,9 +147,6 @@ export default function WorkOrdersPage() {
       wo_description: wo.wo_description ?? '',
       wo_status:     wo.wo_status,
       wo_priority:   wo.wo_priority,
-      wo_item_id:    wo.wo_item_id ?? '',
-      wo_assigned_to: wo.wo_assigned_to ?? '',
-      wo_due_date:   wo.wo_due_date ? wo.wo_due_date.slice(0, 10) : '',
       wo_notes:      wo.wo_notes ?? '',
     });
     setFormError('');
@@ -190,31 +189,60 @@ export default function WorkOrdersPage() {
   const openAttach = async (wo: WorkOrder) => {
     setAttachWo(wo);
     setUploadError('');
+    setUploadNote('');
     setAttachLoading(true);
     const res = await fetch(`/api/work-orders/attach?wo_id=${wo.wo_id}`);
     if (res.ok) setAttachments(await res.json());
     setAttachLoading(false);
   };
 
+  // Upload diretto al Vercel Blob dal browser (bypassa il limite 4.5MB di Vercel)
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !attachWo) return;
+
     setUploading(true);
     setUploadError('');
+    setUploadProgress('Caricamento file…');
     try {
-      const fd = new FormData();
-      fd.append('file', file);
-      fd.append('wo_id', String(attachWo.wo_id));
-      const res = await fetch('/api/work-orders/attach', { method: 'POST', body: fd });
+      // 1. Upload diretto a Vercel Blob tramite token endpoint
+      const blob = await upload(
+        `work-orders/${attachWo.wo_id}/${Date.now()}-${file.name}`,
+        file,
+        {
+          access: 'public',
+          handleUploadUrl: '/api/work-orders/attach/token',
+        }
+      );
+
+      setUploadProgress('Salvataggio metadati…');
+
+      // 2. Salva il record nel DB con metadati + nota
+      const res = await fetch('/api/work-orders/attach', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          wo_id:        attachWo.wo_id,
+          att_url:      blob.url,
+          att_filename: file.name,
+          att_mime:     file.type,
+          att_size:     file.size,
+          att_note:     uploadNote.trim() || null,
+        }),
+      });
       const data = await res.json();
-      if (!res.ok) { setUploadError(data.error ?? 'Errore upload'); return; }
+      if (!res.ok) { setUploadError(data.error ?? 'Errore salvataggio'); return; }
+
       setAttachments(prev => [...prev, data]);
-      // refresh attach_count in table
       setOrders(prev => prev.map(o =>
         o.wo_id === attachWo.wo_id ? { ...o, attach_count: o.attach_count + 1 } : o
       ));
+      setUploadNote('');
+    } catch (err: any) {
+      setUploadError(err?.message ?? 'Errore durante il caricamento');
     } finally {
       setUploading(false);
+      setUploadProgress('');
       if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
@@ -230,15 +258,15 @@ export default function WorkOrdersPage() {
   const images = attachments.filter(a => a.att_type === 'image');
   const files  = attachments.filter(a => a.att_type === 'file');
 
-  // ── Filter columns def ──────────────────────────────────────────────────────
+  // ── Filter columns ──────────────────────────────────────────────────────────
   const cols: { key: string; label: string; w: string }[] = [
-    { key: 'wo_number',     label: 'N° WO',      w: 'min-w-[110px]' },
-    { key: 'wo_title',      label: 'Titolo',      w: 'min-w-[180px]' },
-    { key: 'wo_status',     label: 'Stato',       w: 'min-w-[110px]' },
-    { key: 'wo_priority',   label: 'Priorità',    w: 'min-w-[100px]' },
-    { key: 'wo_assigned_to',label: 'Assegnato a', w: 'min-w-[140px]' },
-    { key: 'wo_item_id',    label: 'Item (EPC)',  w: 'min-w-[140px]' },
+    { key: 'wo_number',   label: 'N° WO',    w: 'min-w-[120px]' },
+    { key: 'wo_title',    label: 'Titolo',   w: 'min-w-[200px]' },
+    { key: 'wo_status',   label: 'Stato',    w: 'min-w-[120px]' },
+    { key: 'wo_priority', label: 'Priorità', w: 'min-w-[110px]' },
   ];
+
+  const totalCols = cols.length + 3; // + N.Dettagli + Allegati + Azioni
 
   // ─────────────────────────────────────────────────────────────────────────────
   return (
@@ -250,26 +278,20 @@ export default function WorkOrdersPage() {
         <div className="flex items-center gap-3">
           {pagination.totalPages > 1 && (
             <div className="flex items-center gap-1">
-              <button
-                onClick={() => fetchOrders(pagination.page - 1)}
-                disabled={pagination.page === 1}
-                className="p-1 rounded border border-gray-300 hover:bg-gray-100 disabled:opacity-40"
-              ><ChevronLeft size={14} /></button>
-              <span className="text-xs text-gray-600">
-                {pagination.page} / {pagination.totalPages}
-              </span>
-              <button
-                onClick={() => fetchOrders(pagination.page + 1)}
-                disabled={pagination.page === pagination.totalPages}
-                className="p-1 rounded border border-gray-300 hover:bg-gray-100 disabled:opacity-40"
-              ><ChevronRight size={14} /></button>
+              <button onClick={() => fetchOrders(pagination.page - 1)} disabled={pagination.page === 1}
+                className="p-1 rounded border border-gray-300 hover:bg-gray-100 disabled:opacity-40">
+                <ChevronLeft size={14} />
+              </button>
+              <span className="text-xs text-gray-600">{pagination.page} / {pagination.totalPages}</span>
+              <button onClick={() => fetchOrders(pagination.page + 1)} disabled={pagination.page === pagination.totalPages}
+                className="p-1 rounded border border-gray-300 hover:bg-gray-100 disabled:opacity-40">
+                <ChevronRight size={14} />
+              </button>
             </div>
           )}
           <span className="text-xs text-gray-500">Totale: {pagination.total}</span>
-          <button
-            onClick={openAdd}
-            className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-3 py-1.5 rounded-lg transition"
-          >
+          <button onClick={openAdd}
+            className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-3 py-1.5 rounded-lg transition">
             <Plus size={16} /> Nuova WO
           </button>
         </div>
@@ -286,8 +308,7 @@ export default function WorkOrdersPage() {
                     <div className="flex flex-col gap-1.5">
                       <span>{col.label}</span>
                       <input
-                        type="text"
-                        placeholder="Filtra..."
+                        type="text" placeholder="Filtra..."
                         className="text-xs font-normal px-1.5 py-0.5 border border-gray-300 rounded w-full"
                         defaultValue={filters[col.key] ?? ''}
                         onBlur={e => commitFilter(col.key, e.target.value)}
@@ -296,22 +317,22 @@ export default function WorkOrdersPage() {
                     </div>
                   </th>
                 ))}
-                <th className="px-3 py-2 text-xs font-bold text-gray-700 align-top min-w-[80px]">Scadenza</th>
+                <th className="px-3 py-2 text-xs font-bold text-gray-700 align-top min-w-[80px]">N.Dettagli</th>
                 <th className="px-3 py-2 text-xs font-bold text-gray-700 align-top min-w-[70px]">Allegati</th>
                 <th className="px-3 py-2 text-xs font-bold text-gray-700 align-top min-w-[110px]">Azioni</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
               {loading ? (
-                <tr><td colSpan={9} className="py-10 text-center text-gray-400 text-xs">
+                <tr><td colSpan={totalCols} className="py-10 text-center text-gray-400 text-xs">
                   <Loader2 size={20} className="animate-spin inline-block mr-2" />Caricamento…
                 </td></tr>
               ) : orders.length === 0 ? (
-                <tr><td colSpan={9} className="py-8 text-center text-gray-400 text-xs">Nessuna work order trovata.</td></tr>
+                <tr><td colSpan={totalCols} className="py-8 text-center text-gray-400 text-xs">Nessuna work order trovata.</td></tr>
               ) : orders.map(wo => (
-                <tr key={wo.wo_id} className="hover:bg-gray-50 group">
+                <tr key={wo.wo_id} className="hover:bg-gray-50">
                   <td className="px-3 py-1.5 text-xs font-mono font-semibold text-gray-800">{wo.wo_number}</td>
-                  <td className="px-3 py-1.5 text-xs text-gray-800 max-w-[220px] truncate" title={wo.wo_title}>{wo.wo_title}</td>
+                  <td className="px-3 py-1.5 text-xs text-gray-800 max-w-[240px] truncate" title={wo.wo_title}>{wo.wo_title}</td>
                   <td className="px-3 py-1.5">
                     <span className={`inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full ${STATUS_STYLE[wo.wo_status] ?? 'bg-gray-100 text-gray-600'}`}>
                       {STATUS_ICON[wo.wo_status]} {wo.wo_status}
@@ -322,33 +343,42 @@ export default function WorkOrdersPage() {
                       {wo.wo_priority}
                     </span>
                   </td>
-                  <td className="px-3 py-1.5 text-xs text-gray-700">{wo.wo_assigned_to || '—'}</td>
-                  <td className="px-3 py-1.5 text-xs font-mono text-gray-500 max-w-[140px] truncate">{wo.wo_item_id || '—'}</td>
-                  <td className="px-3 py-1.5 text-xs text-gray-600">{formatDate(wo.wo_due_date)}</td>
+
+                  {/* N.Dettagli – righe in work_orders_raws */}
+                  <td className="px-3 py-1.5 text-center">
+                    {wo.raws_count > 0 ? (
+                      <span className="inline-flex items-center justify-center bg-violet-100 text-violet-700 text-xs font-bold rounded-full w-6 h-6">
+                        {wo.raws_count}
+                      </span>
+                    ) : (
+                      <span className="text-gray-300 text-xs">—</span>
+                    )}
+                  </td>
+
+                  {/* Allegati */}
                   <td className="px-3 py-1.5">
-                    <button
-                      onClick={() => openAttach(wo)}
-                      className="flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-800 font-semibold"
-                    >
+                    <button onClick={() => openAttach(wo)}
+                      className="flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-800 font-semibold">
                       <Paperclip size={13} />
                       {wo.attach_count > 0 && (
-                        <span className="bg-indigo-100 text-indigo-700 rounded-full px-1.5 py-0">{wo.attach_count}</span>
+                        <span className="bg-indigo-100 text-indigo-700 rounded-full px-1.5">{wo.attach_count}</span>
                       )}
                     </button>
                   </td>
+
+                  {/* Azioni */}
                   <td className="px-3 py-1.5">
                     <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => router.push(`/work-orders/${wo.wo_id}`)}
-                        className="text-violet-600 hover:text-violet-800 p-0.5 rounded hover:bg-violet-50"
-                        title="Dettagli / Righe"
-                      >
+                      <button onClick={() => router.push(`/work-orders/${wo.wo_id}`)}
+                        className="text-violet-600 hover:text-violet-800 p-0.5 rounded hover:bg-violet-50" title="Dettagli / Righe">
                         <ListOrdered size={14} />
                       </button>
-                      <button onClick={() => openEdit(wo)} className="text-blue-500 hover:text-blue-700 p-0.5 rounded hover:bg-blue-50" title="Modifica">
+                      <button onClick={() => openEdit(wo)}
+                        className="text-blue-500 hover:text-blue-700 p-0.5 rounded hover:bg-blue-50" title="Modifica">
                         <Pencil size={14} />
                       </button>
-                      <button onClick={() => setDeleteId(wo.wo_id)} className="text-red-500 hover:text-red-700 p-0.5 rounded hover:bg-red-50" title="Elimina">
+                      <button onClick={() => setDeleteId(wo.wo_id)}
+                        className="text-red-500 hover:text-red-700 p-0.5 rounded hover:bg-red-50" title="Elimina">
                         <Trash2 size={14} />
                       </button>
                     </div>
@@ -366,7 +396,6 @@ export default function WorkOrdersPage() {
       {modalOpen && (
         <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col">
-            {/* Header */}
             <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
               <h2 className="text-base font-bold text-gray-800">
                 {editing ? `Modifica WO #${editing.wo_number}` : 'Nuova Work Order'}
@@ -376,7 +405,6 @@ export default function WorkOrdersPage() {
               </button>
             </div>
 
-            {/* Body */}
             <div className="overflow-y-auto flex-1 px-5 py-4 flex flex-col gap-3">
               {formError && (
                 <div className="flex items-center gap-2 bg-red-50 border border-red-300 text-red-700 text-xs px-3 py-2 rounded-lg">
@@ -384,71 +412,63 @@ export default function WorkOrdersPage() {
                 </div>
               )}
 
-              <div className="grid grid-cols-2 gap-3">
-                <div className="flex flex-col gap-1">
-                  <label className="text-xs font-semibold text-gray-600">N° WO *</label>
-                  <input value={form.wo_number} onChange={e => setForm(f => ({ ...f, wo_number: e.target.value }))}
-                    className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" placeholder="WO-2024-001" />
-                </div>
-                <div className="flex flex-col gap-1">
-                  <label className="text-xs font-semibold text-gray-600">Assegnato a</label>
-                  <input value={form.wo_assigned_to} onChange={e => setForm(f => ({ ...f, wo_assigned_to: e.target.value }))}
-                    className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" placeholder="Nome tecnico" />
-                </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-semibold text-gray-600">N° WO *</label>
+                <input value={form.wo_number}
+                  onChange={e => setForm(f => ({ ...f, wo_number: e.target.value }))}
+                  className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  placeholder="WO-2024-001" />
               </div>
 
               <div className="flex flex-col gap-1">
                 <label className="text-xs font-semibold text-gray-600">Titolo *</label>
-                <input value={form.wo_title} onChange={e => setForm(f => ({ ...f, wo_title: e.target.value }))}
-                  className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" placeholder="Descrizione breve dell'intervento" />
+                <input value={form.wo_title}
+                  onChange={e => setForm(f => ({ ...f, wo_title: e.target.value }))}
+                  className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  placeholder="Descrizione breve dell'ordine" />
               </div>
 
               <div className="flex flex-col gap-1">
                 <label className="text-xs font-semibold text-gray-600">Descrizione</label>
-                <textarea value={form.wo_description} onChange={e => setForm(f => ({ ...f, wo_description: e.target.value }))}
-                  rows={3} className="border border-gray-300 rounded-lg px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-400" placeholder="Dettagli dell'intervento…" />
+                <textarea value={form.wo_description}
+                  onChange={e => setForm(f => ({ ...f, wo_description: e.target.value }))}
+                  rows={3}
+                  className="border border-gray-300 rounded-lg px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  placeholder="Dettagli dell'ordine…" />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="flex flex-col gap-1">
                   <label className="text-xs font-semibold text-gray-600">Stato</label>
-                  <select value={form.wo_status} onChange={e => setForm(f => ({ ...f, wo_status: e.target.value }))}
+                  <select value={form.wo_status}
+                    onChange={e => setForm(f => ({ ...f, wo_status: e.target.value }))}
                     className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
                     {STATUSES.map(s => <option key={s}>{s}</option>)}
                   </select>
                 </div>
                 <div className="flex flex-col gap-1">
                   <label className="text-xs font-semibold text-gray-600">Priorità</label>
-                  <select value={form.wo_priority} onChange={e => setForm(f => ({ ...f, wo_priority: e.target.value }))}
+                  <select value={form.wo_priority}
+                    onChange={e => setForm(f => ({ ...f, wo_priority: e.target.value }))}
                     className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
                     {PRIORITIES.map(p => <option key={p}>{p}</option>)}
                   </select>
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div className="flex flex-col gap-1">
-                  <label className="text-xs font-semibold text-gray-600">Scadenza</label>
-                  <input type="date" value={form.wo_due_date} onChange={e => setForm(f => ({ ...f, wo_due_date: e.target.value }))}
-                    className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
-                </div>
-                <div className="flex flex-col gap-1">
-                  <label className="text-xs font-semibold text-gray-600">Item (EPC)</label>
-                  <input value={form.wo_item_id} onChange={e => setForm(f => ({ ...f, wo_item_id: e.target.value }))}
-                    className="border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-400" placeholder="EPC tag RFID" />
-                </div>
-              </div>
-
               <div className="flex flex-col gap-1">
                 <label className="text-xs font-semibold text-gray-600">Note</label>
-                <textarea value={form.wo_notes} onChange={e => setForm(f => ({ ...f, wo_notes: e.target.value }))}
-                  rows={2} className="border border-gray-300 rounded-lg px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-400" placeholder="Note aggiuntive…" />
+                <textarea value={form.wo_notes}
+                  onChange={e => setForm(f => ({ ...f, wo_notes: e.target.value }))}
+                  rows={2}
+                  className="border border-gray-300 rounded-lg px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  placeholder="Note aggiuntive…" />
               </div>
             </div>
 
-            {/* Footer */}
             <div className="flex justify-end gap-2 px-5 py-3 border-t border-gray-100">
-              <button onClick={() => setModalOpen(false)} className="px-4 py-2 text-sm rounded-lg border border-gray-300 hover:bg-gray-50 text-gray-700">
+              <button onClick={() => setModalOpen(false)}
+                className="px-4 py-2 text-sm rounded-lg border border-gray-300 hover:bg-gray-50 text-gray-700">
                 Annulla
               </button>
               <button onClick={saveForm} disabled={saving}
@@ -473,10 +493,12 @@ export default function WorkOrdersPage() {
               <span className="text-red-500 text-xs">Gli allegati verranno cancellati definitivamente.</span>
             </p>
             <div className="flex gap-3 w-full">
-              <button onClick={() => setDeleteId(null)} className="flex-1 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50">
+              <button onClick={() => setDeleteId(null)}
+                className="flex-1 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50">
                 Annulla
               </button>
-              <button onClick={confirmDelete} className="flex-1 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-semibold">
+              <button onClick={confirmDelete}
+                className="flex-1 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-semibold">
                 Elimina
               </button>
             </div>
@@ -489,13 +511,11 @@ export default function WorkOrdersPage() {
       ════════════════════════════════════════════════════════════════════════ */}
       {attachWo && (
         <div className="fixed inset-0 z-50 flex">
-          {/* Backdrop */}
           <div className="flex-1 bg-black/30" onClick={() => setAttachWo(null)} />
 
-          {/* Drawer */}
           <div className="bg-white w-full max-w-md shadow-2xl flex flex-col h-full overflow-hidden">
 
-            {/* Drawer header */}
+            {/* Header */}
             <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 bg-gray-50">
               <div>
                 <p className="text-xs text-gray-500">Allegati —</p>
@@ -506,18 +526,33 @@ export default function WorkOrdersPage() {
               </button>
             </div>
 
-            {/* Upload bar */}
-            <div className="px-5 py-3 border-b border-gray-100 bg-white">
+            {/* Upload area */}
+            <div className="px-5 py-3 border-b border-gray-100 bg-white flex flex-col gap-2">
               {uploadError && (
-                <p className="text-xs text-red-600 mb-2 flex items-center gap-1">
+                <p className="text-xs text-red-600 flex items-center gap-1">
                   <AlertTriangle size={12} /> {uploadError}
                 </p>
               )}
+
+              {/* Nota allegato */}
+              <div className="flex flex-col gap-1">
+                <label className="text-[10px] font-semibold text-gray-500">Nota allegato</label>
+                <input
+                  type="text"
+                  value={uploadNote}
+                  onChange={e => setUploadNote(e.target.value)}
+                  placeholder="Descrizione del file (opzionale)"
+                  disabled={uploading}
+                  className="border border-gray-300 rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-400 disabled:opacity-50"
+                />
+              </div>
+
+              {/* Bottone upload */}
               <label className={`flex items-center justify-center gap-2 w-full py-2.5 rounded-xl border-2 border-dashed cursor-pointer transition
-                ${uploading ? 'border-gray-200 text-gray-300' : 'border-blue-300 text-blue-500 hover:bg-blue-50 hover:border-blue-400'}`}>
+                ${uploading ? 'border-gray-200 text-gray-300 cursor-not-allowed' : 'border-blue-300 text-blue-500 hover:bg-blue-50 hover:border-blue-400'}`}>
                 {uploading
-                  ? <><Loader2 size={16} className="animate-spin" /> Caricamento…</>
-                  : <><Upload size={16} /> Carica immagine / PDF</>
+                  ? <><Loader2 size={16} className="animate-spin" /> {uploadProgress || 'Caricamento…'}</>
+                  : <><Upload size={16} /> Carica immagine / PDF (max 100 MB)</>
                 }
                 <input
                   ref={fileInputRef}
@@ -551,15 +586,16 @@ export default function WorkOrdersPage() {
                             <img
                               src={att.att_url}
                               alt={att.att_filename}
-                              className="w-full h-full object-cover cursor-pointer transition group-hover:brightness-90"
+                              className="w-full h-full object-cover cursor-pointer transition group-hover:brightness-75"
                               onClick={() => setLightbox(att.att_url)}
                             />
-                            {/* Overlay on hover */}
-                            <div className="absolute inset-0 flex flex-col justify-end p-1.5 opacity-0 group-hover:opacity-100 transition bg-gradient-to-t from-black/50 to-transparent">
-                              <p className="text-white text-[9px] truncate leading-tight">{att.att_filename}</p>
-                              <p className="text-white/70 text-[9px]">{formatSize(att.att_size)}</p>
+                            <div className="absolute inset-0 flex flex-col justify-end p-1.5 opacity-0 group-hover:opacity-100 transition bg-gradient-to-t from-black/60 to-transparent">
+                              {att.att_note && (
+                                <p className="text-white text-[9px] font-semibold truncate leading-tight mb-0.5">{att.att_note}</p>
+                              )}
+                              <p className="text-white/80 text-[9px] truncate leading-tight">{att.att_filename}</p>
+                              <p className="text-white/60 text-[9px]">{formatSize(att.att_size)}</p>
                             </div>
-                            {/* Delete button */}
                             <button
                               onClick={() => deleteAttach(att)}
                               className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition hover:bg-red-700"
@@ -582,31 +618,23 @@ export default function WorkOrdersPage() {
                         {files.map(att => (
                           <div key={att.att_id}
                             className="flex items-center gap-3 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 hover:bg-gray-100 transition">
-                            {/* PDF icon */}
                             <div className="shrink-0 w-9 h-9 bg-red-100 rounded-lg flex items-center justify-center">
                               <FileText size={18} className="text-red-600" />
                             </div>
-                            {/* Info */}
                             <div className="flex-1 min-w-0">
                               <p className="text-xs font-semibold text-gray-800 truncate">{att.att_filename}</p>
+                              {att.att_note && (
+                                <p className="text-[10px] text-blue-600 font-medium truncate">{att.att_note}</p>
+                              )}
                               <p className="text-[10px] text-gray-400">{formatSize(att.att_size)} · {formatDate(att.att_created_at)}</p>
                             </div>
-                            {/* Actions */}
                             <div className="flex items-center gap-1 shrink-0">
-                              <a
-                                href={att.att_url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-blue-500 hover:text-blue-700 p-1 rounded hover:bg-blue-50"
-                                title="Apri/Scarica"
-                              >
+                              <a href={att.att_url} target="_blank" rel="noopener noreferrer"
+                                className="text-blue-500 hover:text-blue-700 p-1 rounded hover:bg-blue-50" title="Apri/Scarica">
                                 <FileText size={14} />
                               </a>
-                              <button
-                                onClick={() => deleteAttach(att)}
-                                className="text-red-400 hover:text-red-600 p-1 rounded hover:bg-red-50"
-                                title="Elimina"
-                              >
+                              <button onClick={() => deleteAttach(att)}
+                                className="text-red-400 hover:text-red-600 p-1 rounded hover:bg-red-50" title="Elimina">
                                 <Trash2 size={14} />
                               </button>
                             </div>
@@ -627,24 +655,17 @@ export default function WorkOrdersPage() {
       )}
 
       {/* ════════════════════════════════════════════════════════════════════════
-          LIGHTBOX (image fullscreen preview)
+          LIGHTBOX
       ════════════════════════════════════════════════════════════════════════ */}
       {lightbox && (
-        <div
-          className="fixed inset-0 z-[60] bg-black/90 flex items-center justify-center p-4 cursor-zoom-out"
-          onClick={() => setLightbox(null)}
-        >
+        <div className="fixed inset-0 z-[60] bg-black/90 flex items-center justify-center p-4 cursor-zoom-out"
+          onClick={() => setLightbox(null)}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={lightbox}
-            alt="preview"
+          <img src={lightbox} alt="preview"
             className="max-w-full max-h-full rounded-xl shadow-2xl object-contain"
-            onClick={e => e.stopPropagation()}
-          />
-          <button
-            onClick={() => setLightbox(null)}
-            className="absolute top-4 right-4 bg-white/20 hover:bg-white/40 text-white rounded-full p-2 transition"
-          >
+            onClick={e => e.stopPropagation()} />
+          <button onClick={() => setLightbox(null)}
+            className="absolute top-4 right-4 bg-white/20 hover:bg-white/40 text-white rounded-full p-2 transition">
             <X size={22} />
           </button>
         </div>
