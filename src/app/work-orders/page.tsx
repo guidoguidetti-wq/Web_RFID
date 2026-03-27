@@ -1,10 +1,12 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   Plus, Pencil, Trash2, Paperclip, X, Upload,
   FileText, Image as ImageIcon, ChevronLeft, ChevronRight,
   Loader2, AlertTriangle, CheckCircle2, Clock, ZapOff,
+  ListOrdered,
 } from 'lucide-react';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -78,6 +80,7 @@ function formatSize(bytes: number) {
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function WorkOrdersPage() {
+  const router = useRouter();
   const [orders, setOrders]       = useState<WorkOrder[]>([]);
   const [pagination, setPagination] = useState({ page: 1, limit: 50, total: 0, totalPages: 0 });
   const [filters, setFilters]     = useState<Record<string, string>>({});
@@ -295,7 +298,7 @@ export default function WorkOrdersPage() {
                 ))}
                 <th className="px-3 py-2 text-xs font-bold text-gray-700 align-top min-w-[80px]">Scadenza</th>
                 <th className="px-3 py-2 text-xs font-bold text-gray-700 align-top min-w-[70px]">Allegati</th>
-                <th className="px-3 py-2 text-xs font-bold text-gray-700 align-top min-w-[90px]">Azioni</th>
+                <th className="px-3 py-2 text-xs font-bold text-gray-700 align-top min-w-[110px]">Azioni</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -335,6 +338,13 @@ export default function WorkOrdersPage() {
                   </td>
                   <td className="px-3 py-1.5">
                     <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => router.push(`/work-orders/${wo.wo_id}`)}
+                        className="text-violet-600 hover:text-violet-800 p-0.5 rounded hover:bg-violet-50"
+                        title="Dettagli / Righe"
+                      >
+                        <ListOrdered size={14} />
+                      </button>
                       <button onClick={() => openEdit(wo)} className="text-blue-500 hover:text-blue-700 p-0.5 rounded hover:bg-blue-50" title="Modifica">
                         <Pencil size={14} />
                       </button>
