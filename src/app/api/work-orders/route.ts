@@ -32,22 +32,45 @@ export async function GET(req: NextRequest) {
 
     params.push(limit, offset);
     const dataRes = await query(
-      `SELECT w.*,
-              (SELECT COUNT(*)::int FROM work_orders_attach WHERE att_wo_id = w.wo_id) AS attach_count
-       FROM work_orders w
-       ${where}
-       ORDER BY w.wo_created_at DESC
+      `SELECT * FROM work_orders ${where}
+       ORDER BY wo_created_at DESC
        LIMIT $${idx} OFFSET $${idx + 1}`,
       params
     );
 
+    // Conta allegati separatamente (la tabella potrebbe non esistere ancora)
+    let attachCounts: Record<number, number> = {};
+    try {
+      const ids = dataRes.rows.map((r: any) => r.wo_id);
+      if (ids.length > 0) {
+        const acRes = await query(
+          `SELECT att_wo_id, COUNT(*)::int AS cnt
+           FROM work_orders_attach
+           WHERE att_wo_id = ANY($1::int[])
+           GROUP BY att_wo_id`,
+          [ids]
+        );
+        acRes.rows.forEach((r: any) => { attachCounts[r.att_wo_id] = r.cnt; });
+      }
+    } catch {
+      // work_orders_attach non ancora creata: ignora
+    }
+
+    const workOrders = dataRes.rows.map((r: any) => ({
+      ...r,
+      attach_count: attachCounts[r.wo_id] ?? 0,
+    }));
+
     return NextResponse.json({
-      workOrders: dataRes.rows,
+      workOrders,
       pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
     });
-  } catch (err) {
+  } catch (err: any) {
     console.error('GET work_orders:', err);
-    return NextResponse.json({ error: 'Errore nel recupero work orders' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Errore nel recupero work orders', detail: err?.message },
+      { status: 500 }
+    );
   }
 }
 
@@ -81,7 +104,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Numero WO già esistente' }, { status: 409 });
     }
     console.error('POST work_orders:', err);
-    return NextResponse.json({ error: 'Errore nella creazione work order' }, { status: 500 });
+    return NextResponse.json({ error: 'Errore nella creazione work order', detail: err?.message }, { status: 500 });
   }
 }
 
@@ -120,7 +143,7 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ error: 'Numero WO già esistente' }, { status: 409 });
     }
     console.error('PUT work_orders:', err);
-    return NextResponse.json({ error: 'Errore nell\'aggiornamento' }, { status: 500 });
+    return NextResponse.json({ error: "Errore nell'aggiornamento", detail: err?.message }, { status: 500 });
   }
 }
 
@@ -138,6 +161,6 @@ export async function DELETE(req: NextRequest) {
     return NextResponse.json({ success: true });
   } catch (err) {
     console.error('DELETE work_orders:', err);
-    return NextResponse.json({ error: 'Errore nella cancellazione' }, { status: 500 });
+    return NextResponse.json({ error: 'Errore nella cancellazione', detail: (err as any)?.message }, { status: 500 });
   }
 }

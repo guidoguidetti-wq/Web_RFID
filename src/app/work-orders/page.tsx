@@ -167,7 +167,7 @@ export default function WorkOrdersPage() {
         body: JSON.stringify(body),
       });
       const data = await res.json();
-      if (!res.ok) { setFormError(data.error ?? 'Errore'); return; }
+      if (!res.ok) { setFormError(`${data.error ?? 'Errore'}${data.detail ? ` — ${data.detail}` : ''}`); return; }
       setModalOpen(false);
       fetchOrders(pagination.page);
     } finally {
