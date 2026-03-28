@@ -41,7 +41,7 @@ export async function GET(req: NextRequest) {
         // 4. Get primary image attachment
         const attachResult = await query(
           `SELECT att_url FROM work_orders_attach
-           WHERE att_wo_id = $1 AND att_type = 'Image'
+           WHERE att_wo_id = $1 AND att_type = 'image'
            ORDER BY att_created_at ASC LIMIT 1`,
           [wo_id]
         );
