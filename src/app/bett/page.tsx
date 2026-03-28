@@ -2,6 +2,7 @@
 
 import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import {
   ShieldCheck,
   BookOpen,
@@ -42,6 +43,7 @@ function InfoRow({ label, value }: { label: string; value?: string | null }) {
 
 function BettContent() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const uid = searchParams.get('UID') ?? searchParams.get('uid') ?? '';
 
   const [data, setData] = useState<BettData | null>(null);
@@ -255,7 +257,7 @@ function BettContent() {
             <div className="grid grid-cols-2 gap-3 mt-1">
               {/* Warranty */}
               <button
-                onClick={() => {/* implementare */}}
+                onClick={() => router.push(`/bett/garanzia?UID=${encodeURIComponent(uid)}`)}
                 className="flex flex-col items-center justify-center gap-2 bg-[#00aeef]/15 border border-[#00aeef]/30 rounded-2xl aspect-square active:scale-95 transition-transform hover:bg-[#00aeef]/25"
               >
                 <div className="w-10 h-10 rounded-xl bg-[#00aeef]/20 flex items-center justify-center">

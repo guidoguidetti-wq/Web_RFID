@@ -82,6 +82,7 @@ CREATE TABLE "Items" (
     date_lastseen TIMESTAMP,
     place_last VARCHAR(50),
     zone_last VARCHAR(50),
+    epc VARCHAR(255) NULL,
     FOREIGN KEY (item_product_id) REFERENCES "Products"(product_id) ON DELETE RESTRICT,
     FOREIGN KEY (place_last) REFERENCES "Places"(place_id) ON DELETE SET NULL,
     FOREIGN KEY (zone_last) REFERENCES "Zones"(zone_id) ON DELETE SET NULL
