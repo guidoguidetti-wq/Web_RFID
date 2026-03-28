@@ -4,11 +4,8 @@ import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import {
   ShieldCheck,
-  ShieldX,
   BookOpen,
   Loader2,
-  MapPin,
-  AlertTriangle,
   ShieldAlert,
 } from 'lucide-react';
 
@@ -20,6 +17,13 @@ const PROD_CODE_LABEL = process.env.NEXT_PUBLIC_BETT_PRODUCT_CODE_LABEL   ?? 'Pr
 const FAKE_MESSAGE    = process.env.NEXT_PUBLIC_BETT_FAKE_MESSAGE          ?? 'Prodotto Non Autentico';
 const WARRANTY_LABEL  = process.env.NEXT_PUBLIC_BETT_WARRANTY_LABEL       ?? 'Garanzia';
 const MANUALS_LABEL   = process.env.NEXT_PUBLIC_BETT_MANUALS_LABEL        ?? 'Manuali';
+
+/** Converte country code ISO-2 (es. "IT") in emoji bandiera */
+function flagEmoji(code: string): string {
+  return [...code.toUpperCase()]
+    .map(c => String.fromCodePoint(0x1f1e0 + c.charCodeAt(0) - 65))
+    .join('');
+}
 
 interface BettData {
   found: boolean;
@@ -45,7 +49,8 @@ function BettContent() {
 
   const [data, setData] = useState<BettData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [country, setCountry] = useState<string>('');
+  const [country, setCountry]         = useState<string>('');
+  const [countryCode, setCountryCode] = useState<string>('');
 
   useEffect(() => {
     if (!uid) { setLoading(false); return; }
@@ -59,7 +64,10 @@ function BettContent() {
   useEffect(() => {
     fetch('https://ipapi.co/json/')
       .then(r => r.json())
-      .then(d => setCountry(d.country_name ?? ''))
+      .then(d => {
+        setCountry(d.country_name ?? '');
+        setCountryCode(d.country_code ?? '');
+      })
       .catch(() => {});
   }, []);
 
@@ -77,7 +85,6 @@ function BettContent() {
           src="/Logo_Bett.png"
           alt="Bett Sistemi"
           className="h-12 w-auto drop-shadow-lg"
-          style={{ filter: 'brightness(0) invert(1)' }}
         />
         <p className="text-[#00aeef] text-[11px] font-semibold tracking-[0.25em] uppercase mt-1">
           {PAGE_TITLE}
@@ -113,37 +120,62 @@ function BettContent() {
       {isFound && item && (
         <main className="flex-1 flex flex-col max-w-md mx-auto w-full">
 
-          {/* Product image */}
+          {/* Product image – half height (aspect-[2/1]) */}
           {data?.productImage ? (
-            <div className="w-full aspect-square relative overflow-hidden">
+            <div className="w-full aspect-[2/1] relative overflow-hidden">
               <img
                 src={data.productImage}
                 alt="Prodotto"
                 className="w-full h-full object-cover"
               />
-              {/* gradient overlay at bottom */}
-              <div className="absolute inset-0 bg-gradient-to-t from-[#0a0e1a] via-[#0a0e1a]/20 to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-t from-[#0a0e1a] via-[#0a0e1a]/10 to-transparent" />
             </div>
           ) : (
-            /* placeholder if no image */
-            <div className="w-full aspect-square bg-gradient-to-br from-[#00aeef]/10 to-[#0a0e1a] flex items-center justify-center">
-              <div className="w-24 h-24 rounded-full bg-[#00aeef]/10 flex items-center justify-center">
-                <ShieldCheck size={44} className="text-[#00aeef]/40" />
+            <div className="w-full aspect-[2/1] bg-gradient-to-br from-[#00aeef]/10 to-[#0a0e1a] flex items-center justify-center">
+              <div className="w-16 h-16 rounded-full bg-[#00aeef]/10 flex items-center justify-center">
+                <ShieldCheck size={32} className="text-[#00aeef]/40" />
               </div>
             </div>
           )}
 
-          <div className="px-5 flex flex-col gap-4 pb-8 -mt-6 relative z-10">
+          <div className="px-5 flex flex-col gap-4 pb-8 -mt-4 relative z-10">
 
-            {/* ── AUTHENTIC BADGE ── */}
-            <div className="flex items-center gap-3 bg-green-500/15 border border-green-500/40 rounded-2xl px-4 py-3 backdrop-blur-sm">
-              <div className="w-10 h-10 rounded-xl bg-green-500/20 flex items-center justify-center shrink-0">
-                <ShieldCheck size={22} className="text-green-400" />
+            {/* ── AUTHENTIC BADGE (includes UID + country) ── */}
+            <div className="bg-green-500/15 border border-green-500/40 rounded-2xl px-4 py-3 backdrop-blur-sm flex flex-col gap-3">
+              {/* top row: shield + label */}
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-green-500/20 flex items-center justify-center shrink-0">
+                  <ShieldCheck size={22} className="text-green-400" />
+                </div>
+                <div>
+                  <p className="text-green-300 font-bold text-sm tracking-wide">PRODOTTO AUTENTICO</p>
+                  <p className="text-green-400/70 text-xs">Autenticità verificata con successo</p>
+                </div>
               </div>
+
+              {/* divider */}
+              <div className="border-t border-green-500/20" />
+
+              {/* UID */}
               <div>
-                <p className="text-green-300 font-bold text-sm tracking-wide">PRODOTTO AUTENTICO</p>
-                <p className="text-green-400/70 text-xs">Autenticità verificata con successo</p>
+                <p className="text-[10px] font-semibold uppercase tracking-widest text-green-400/50 mb-0.5">{UID_LABEL}</p>
+                <p className="font-mono text-[11px] text-white/60 break-all">{uid}</p>
               </div>
+
+              {/* Country with flag */}
+              {country && (
+                <div className="flex items-center gap-2">
+                  {countryCode && (
+                    <img
+                      src={`https://flagcdn.com/w20/${countryCode.toLowerCase()}.png`}
+                      alt={country}
+                      className="w-5 h-auto rounded-sm shrink-0"
+                    />
+                  )}
+                  <span className="text-[11px] text-white/40">{SCANNED_IN}</span>
+                  <span className="text-[11px] font-semibold text-white/70">{country}</span>
+                </div>
+              )}
             </div>
 
             {/* ── PRODUCT INFO BLOCK ── */}
@@ -152,21 +184,6 @@ function BettContent() {
               <InfoRow label={PROD_CODE_LABEL} value={item.item_product_id} />
               <InfoRow label="Variant"         value={product?.fld02} />
               <InfoRow label="Info"            value={product?.fldd01} />
-            </div>
-
-            {/* ── UID + country ── */}
-            <div className="bg-white/5 border border-white/10 rounded-xl px-4 py-3 flex flex-col gap-2">
-              <div>
-                <p className="text-[10px] font-semibold uppercase tracking-widest text-[#00aeef]/60 mb-0.5">{UID_LABEL}</p>
-                <p className="font-mono text-[11px] text-white/50 break-all">{uid}</p>
-              </div>
-              {country && (
-                <div className="flex items-center gap-2 pt-2 border-t border-white/10">
-                  <MapPin size={13} className="text-[#00aeef]/60 shrink-0" />
-                  <span className="text-[11px] text-white/40">{SCANNED_IN}</span>
-                  <span className="text-[11px] font-semibold text-white/70">{country}</span>
-                </div>
-              )}
             </div>
 
             {/* ── ACTION BUTTONS 2×2 grid ── */}
