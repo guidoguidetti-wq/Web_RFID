@@ -18,6 +18,7 @@ const LOT_LABEL       = process.env.NEXT_PUBLIC_BETT_LOT_LABEL             ?? 'L
 const PROD_CODE_LABEL = process.env.NEXT_PUBLIC_BETT_PRODUCT_CODE_LABEL   ?? 'Product Code';
 const FAKE_MESSAGE    = process.env.NEXT_PUBLIC_BETT_FAKE_MESSAGE          ?? 'Prodotto Non Autentico';
 const BETT_PHONE      = process.env.NEXT_PUBLIC_BETT_PHONE                 ?? '+393492284826';
+const BETT_SMS_PHONE  = process.env.NEXT_PUBLIC_BETT_SMS_PHONE             ?? '+393492284826';
 const WARRANTY_LABEL  = process.env.NEXT_PUBLIC_BETT_WARRANTY_LABEL       ?? 'Garanzia';
 const MANUALS_LABEL   = process.env.NEXT_PUBLIC_BETT_MANUALS_LABEL        ?? 'Manuali';
 
@@ -123,7 +124,7 @@ function BettContent() {
             </a>
 
             <a
-              href={`sms:${BETT_PHONE}?body=${encodeURIComponent(`Ho riscontrato una mancata validazione di un prodotto Bett Sistemi, la matricola è ${uid}, prego di contattarmi per ricevere istruzioni.`)}`}
+              href={`sms:${BETT_SMS_PHONE}?body=${encodeURIComponent(`Ho riscontrato una mancata validazione di un prodotto Bett Sistemi, la matricola è ${uid}, prego di contattarmi per ricevere istruzioni.`)}`}
               className="flex flex-col items-center justify-center gap-2 bg-emerald-500/15 border border-emerald-500/30 rounded-2xl aspect-square active:scale-95 transition-transform hover:bg-emerald-500/25"
             >
               <div className="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center">
