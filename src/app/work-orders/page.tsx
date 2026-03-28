@@ -97,9 +97,10 @@ export default function WorkOrdersPage() {
   const [attachWo, setAttachWo]           = useState<WorkOrder | null>(null);
   const [attachments, setAttachments]     = useState<Attachment[]>([]);
   const [attachLoading, setAttachLoading] = useState(false);
-  const [uploading, setUploading]         = useState(false);
-  const [uploadError, setUploadError]     = useState('');
-  const [uploadNote, setUploadNote]       = useState('');
+  const [uploading, setUploading]           = useState(false);
+  const [uploadError, setUploadError]       = useState('');
+  const [uploadNote, setUploadNote]         = useState('');
+  const [uploadType, setUploadType]         = useState('Immagine Principale');
   const [uploadProgress, setUploadProgress] = useState('');
   const [lightbox, setLightbox]           = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -190,6 +191,7 @@ export default function WorkOrdersPage() {
     setAttachWo(wo);
     setUploadError('');
     setUploadNote('');
+    setUploadType('Immagine Principale');
     setAttachLoading(true);
     const res = await fetch(`/api/work-orders/attach?wo_id=${wo.wo_id}`);
     if (res.ok) setAttachments(await res.json());
@@ -228,6 +230,7 @@ export default function WorkOrdersPage() {
           att_mime:     file.type,
           att_size:     file.size,
           att_note:     uploadNote.trim() || null,
+          att_type:     uploadType,
         }),
       });
       const data = await res.json();
@@ -238,6 +241,7 @@ export default function WorkOrdersPage() {
         o.wo_id === attachWo.wo_id ? { ...o, attach_count: o.attach_count + 1 } : o
       ));
       setUploadNote('');
+      setUploadType('Immagine Principale');
     } catch (err: any) {
       setUploadError(err?.message ?? 'Errore durante il caricamento');
     } finally {
@@ -255,8 +259,8 @@ export default function WorkOrdersPage() {
     ));
   };
 
-  const images = attachments.filter(a => a.att_type === 'image');
-  const files  = attachments.filter(a => a.att_type === 'file');
+  const images = attachments.filter(a => a.att_mime?.startsWith('image/'));
+  const files  = attachments.filter(a => !a.att_mime?.startsWith('image/'));
 
   // ── Filter columns ──────────────────────────────────────────────────────────
   const cols: { key: string; label: string; w: string }[] = [
@@ -534,6 +538,21 @@ export default function WorkOrdersPage() {
                 </p>
               )}
 
+              {/* Tipo allegato */}
+              <div className="flex flex-col gap-1">
+                <label className="text-[10px] font-semibold text-gray-500">Tipo allegato</label>
+                <select
+                  value={uploadType}
+                  onChange={e => setUploadType(e.target.value)}
+                  disabled={uploading}
+                  className="border border-gray-300 rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-400 disabled:opacity-50 bg-white"
+                >
+                  <option>Immagine Principale</option>
+                  <option>Files (Manuali)</option>
+                  <option>Altro</option>
+                </select>
+              </div>
+
               {/* Nota allegato */}
               <div className="flex flex-col gap-1">
                 <label className="text-[10px] font-semibold text-gray-500">Nota allegato</label>
@@ -590,6 +609,7 @@ export default function WorkOrdersPage() {
                               onClick={() => setLightbox(att.att_url)}
                             />
                             <div className="absolute inset-0 flex flex-col justify-end p-1.5 opacity-0 group-hover:opacity-100 transition bg-gradient-to-t from-black/60 to-transparent">
+                              <span className="text-[8px] font-bold bg-white/20 text-white px-1 py-0.5 rounded w-fit mb-0.5">{att.att_type}</span>
                               {att.att_note && (
                                 <p className="text-white text-[9px] font-semibold truncate leading-tight mb-0.5">{att.att_note}</p>
                               )}
@@ -622,6 +642,11 @@ export default function WorkOrdersPage() {
                               <FileText size={18} className="text-red-600" />
                             </div>
                             <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-1.5 mb-0.5">
+                                <span className="text-[9px] font-bold bg-gray-200 text-gray-600 px-1.5 py-0.5 rounded-full whitespace-nowrap">
+                                  {att.att_type}
+                                </span>
+                              </div>
                               <p className="text-xs font-semibold text-gray-800 truncate">{att.att_filename}</p>
                               {att.att_note && (
                                 <p className="text-[10px] text-blue-600 font-medium truncate">{att.att_note}</p>

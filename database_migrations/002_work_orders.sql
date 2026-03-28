@@ -36,7 +36,8 @@ CREATE TABLE work_orders_attach (
     att_id         SERIAL       PRIMARY KEY,
     att_wo_id      INTEGER      NOT NULL,
     att_filename   VARCHAR(500) NOT NULL,
-    att_type       VARCHAR(10)  NOT NULL,
+    att_type       VARCHAR(30)  NOT NULL,
+        -- 'Immagine Principale' | 'Files (Manuali)' | 'Altro'
     att_mime       VARCHAR(100),
     att_size       INTEGER,
     att_url        TEXT         NOT NULL,

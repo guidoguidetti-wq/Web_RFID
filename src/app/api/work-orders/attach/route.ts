@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { del } from '@vercel/blob';
 import { query } from '@/lib/db';
 
-const IMAGE_MIMES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
+const ALLOWED_TYPES = ['Immagine Principale', 'Files (Manuali)', 'Altro'] as const;
 
 // ── GET – lista allegati per una work order ───────────────────────────────────
 export async function GET(req: NextRequest) {
@@ -27,21 +27,22 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { wo_id, att_url, att_filename, att_mime, att_size, att_note } = body;
+    const { wo_id, att_url, att_filename, att_mime, att_size, att_note, att_type } = body;
 
     if (!wo_id || !att_url || !att_filename) {
       return NextResponse.json({ error: 'wo_id, att_url e att_filename obbligatori' }, { status: 400 });
     }
 
-    const isImage = IMAGE_MIMES.includes(att_mime ?? '');
-    const att_type = isImage ? 'image' : 'file';
+    const resolvedType = (ALLOWED_TYPES as readonly string[]).includes(att_type)
+      ? att_type
+      : 'Altro';
 
     const res = await query(
       `INSERT INTO work_orders_attach
          (att_wo_id, att_filename, att_type, att_mime, att_size, att_url, att_note)
        VALUES ($1, $2, $3, $4, $5, $6, $7)
        RETURNING *`,
-      [wo_id, att_filename, att_type, att_mime ?? null, att_size ?? null, att_url, att_note || null]
+      [wo_id, att_filename, resolvedType, att_mime ?? null, att_size ?? null, att_url, att_note || null]
     );
 
     return NextResponse.json(res.rows[0], { status: 201 });

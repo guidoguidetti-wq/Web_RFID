@@ -8,26 +8,35 @@ import {
   BookOpen,
   Loader2,
   MapPin,
-  Hash,
-  Package,
   AlertTriangle,
-  FileText,
-  ChevronRight,
+  ShieldAlert,
 } from 'lucide-react';
 
-const PAGE_TITLE      = process.env.NEXT_PUBLIC_BETT_PAGE_TITLE      ?? 'RFID NFC Authenticator Page';
-const UID_LABEL       = process.env.NEXT_PUBLIC_BETT_UID_LABEL        ?? 'Unique Product Identifier Scanned';
-const SCANNED_IN      = process.env.NEXT_PUBLIC_BETT_SCANNED_IN_LABEL ?? 'Scanned in';
-const LOT_LABEL       = process.env.NEXT_PUBLIC_BETT_LOT_LABEL        ?? 'Lot/Supply';
-const PROD_CODE_LABEL = process.env.NEXT_PUBLIC_BETT_PRODUCT_CODE_LABEL ?? 'Product Code';
-const FAKE_MESSAGE    = process.env.NEXT_PUBLIC_BETT_FAKE_MESSAGE      ?? 'Probably Fake Product - Please Contact US';
-const WARRANTY_LABEL  = process.env.NEXT_PUBLIC_BETT_WARRANTY_LABEL   ?? 'Warranty Activation/View';
-const MANUALS_LABEL   = process.env.NEXT_PUBLIC_BETT_MANUALS_LABEL    ?? 'Manuals & Documents';
+const PAGE_TITLE      = process.env.NEXT_PUBLIC_BETT_PAGE_TITLE           ?? 'RFID NFC Authenticator';
+const UID_LABEL       = process.env.NEXT_PUBLIC_BETT_UID_LABEL             ?? 'Unique Product Identifier';
+const SCANNED_IN      = process.env.NEXT_PUBLIC_BETT_SCANNED_IN_LABEL     ?? 'Scanned in';
+const LOT_LABEL       = process.env.NEXT_PUBLIC_BETT_LOT_LABEL             ?? 'Lot/Supply';
+const PROD_CODE_LABEL = process.env.NEXT_PUBLIC_BETT_PRODUCT_CODE_LABEL   ?? 'Product Code';
+const FAKE_MESSAGE    = process.env.NEXT_PUBLIC_BETT_FAKE_MESSAGE          ?? 'Prodotto Non Autentico';
+const WARRANTY_LABEL  = process.env.NEXT_PUBLIC_BETT_WARRANTY_LABEL       ?? 'Garanzia';
+const MANUALS_LABEL   = process.env.NEXT_PUBLIC_BETT_MANUALS_LABEL        ?? 'Manuali';
 
 interface BettData {
   found: boolean;
   item?: Record<string, any>;
   product?: Record<string, any>;
+  productImage?: string | null;
+}
+
+/* ─── compact label + value ─── */
+function InfoRow({ label, value }: { label: string; value?: string | null }) {
+  if (!value) return null;
+  return (
+    <div className="flex flex-col gap-0.5">
+      <span className="text-[10px] font-semibold uppercase tracking-widest text-[#00aeef]/70">{label}</span>
+      <span className="text-sm font-bold text-white leading-snug">{value}</span>
+    </div>
+  );
 }
 
 function BettContent() {
@@ -38,7 +47,6 @@ function BettContent() {
   const [loading, setLoading] = useState(true);
   const [country, setCountry] = useState<string>('');
 
-  // Fetch item data
   useEffect(() => {
     if (!uid) { setLoading(false); return; }
     fetch(`/api/bett?uid=${encodeURIComponent(uid)}`)
@@ -48,7 +56,6 @@ function BettContent() {
       .finally(() => setLoading(false));
   }, [uid]);
 
-  // Detect country from IP
   useEffect(() => {
     fetch('https://ipapi.co/json/')
       .then(r => r.json())
@@ -56,163 +63,147 @@ function BettContent() {
       .catch(() => {});
   }, []);
 
+  const item    = data?.item;
+  const product = data?.product;
+  const isFound = !loading && data?.found;
+  const isFake  = !loading && data && !data.found;
+
   return (
-    <div className="min-h-screen bg-gradient-to-b from-sky-50 to-white flex flex-col">
+    <div className="min-h-screen bg-[#0a0e1a] flex flex-col font-sans">
 
       {/* ── HEADER ── */}
-      <header className="bg-[#00aeef] shadow-lg px-4 py-4 flex flex-col items-center gap-2">
+      <header className="relative z-10 flex flex-col items-center gap-1 pt-8 pb-4 px-6">
         <img
           src="/Logo_Bett.png"
           alt="Bett Sistemi"
-          className="h-14 w-auto drop-shadow"
+          className="h-12 w-auto drop-shadow-lg"
+          style={{ filter: 'brightness(0) invert(1)' }}
         />
-        <p className="text-white text-sm font-semibold tracking-wide text-center">
+        <p className="text-[#00aeef] text-[11px] font-semibold tracking-[0.25em] uppercase mt-1">
           {PAGE_TITLE}
         </p>
       </header>
 
-      {/* ── BODY ── */}
-      <main className="flex-1 px-4 py-6 flex flex-col gap-5 max-w-md mx-auto w-full">
+      {/* ── LOADING ── */}
+      {loading && (
+        <div className="flex-1 flex flex-col items-center justify-center gap-4 text-white/40">
+          <Loader2 size={40} className="animate-spin text-[#00aeef]" />
+          <span className="text-sm tracking-wide">Verifica autenticità…</span>
+        </div>
+      )}
 
-        {/* UID card */}
-        <div className="bg-white rounded-2xl shadow-md border border-gray-100 p-4">
-          <p className="text-xs text-gray-500 font-medium mb-1">{UID_LABEL}</p>
-          {uid ? (
-            <div className="flex items-center gap-2">
-              <Hash size={16} className="text-sky-500 shrink-0" />
-              <span className="text-xs text-gray-500 break-all">UID=</span>
-              <span className="font-mono font-bold text-sky-700 text-sm break-all">{uid}</span>
+      {/* ── FAKE ── */}
+      {isFake && (
+        <main className="flex-1 flex flex-col items-center justify-center px-6 gap-6">
+          <div className="w-28 h-28 rounded-full bg-red-500/10 border-2 border-red-500 flex items-center justify-center">
+            <ShieldAlert size={52} className="text-red-400" />
+          </div>
+          <div className="text-center">
+            <p className="text-red-400 font-bold text-xl tracking-wide">{FAKE_MESSAGE}</p>
+            <p className="text-red-500/70 text-xs mt-2">Contattare il produttore</p>
+          </div>
+          <div className="bg-white/5 border border-white/10 rounded-xl px-5 py-3 text-center">
+            <p className="text-[10px] text-white/40 uppercase tracking-widest mb-1">{UID_LABEL}</p>
+            <p className="font-mono text-xs text-white/60 break-all">{uid}</p>
+          </div>
+        </main>
+      )}
+
+      {/* ── FOUND ── */}
+      {isFound && item && (
+        <main className="flex-1 flex flex-col max-w-md mx-auto w-full">
+
+          {/* Product image */}
+          {data?.productImage ? (
+            <div className="w-full aspect-square relative overflow-hidden">
+              <img
+                src={data.productImage}
+                alt="Prodotto"
+                className="w-full h-full object-cover"
+              />
+              {/* gradient overlay at bottom */}
+              <div className="absolute inset-0 bg-gradient-to-t from-[#0a0e1a] via-[#0a0e1a]/20 to-transparent" />
             </div>
           ) : (
-            <p className="text-red-500 text-sm">Nessun UID rilevato nell&apos;URL.</p>
-          )}
-
-          {/* Scanned-in */}
-          {country && (
-            <div className="flex items-center gap-2 mt-3 pt-3 border-t border-gray-100">
-              <MapPin size={15} className="text-green-500 shrink-0" />
-              <span className="text-xs text-gray-500">{SCANNED_IN}</span>
-              <span className="text-sm font-semibold text-gray-800">{country}</span>
+            /* placeholder if no image */
+            <div className="w-full aspect-square bg-gradient-to-br from-[#00aeef]/10 to-[#0a0e1a] flex items-center justify-center">
+              <div className="w-24 h-24 rounded-full bg-[#00aeef]/10 flex items-center justify-center">
+                <ShieldCheck size={44} className="text-[#00aeef]/40" />
+              </div>
             </div>
           )}
-        </div>
 
-        {/* ── LOADING ── */}
-        {loading && (
-          <div className="flex flex-col items-center gap-3 py-10 text-gray-400">
-            <Loader2 size={36} className="animate-spin text-sky-400" />
-            <span className="text-sm">Verifica autenticità in corso…</span>
-          </div>
-        )}
+          <div className="px-5 flex flex-col gap-4 pb-8 -mt-6 relative z-10">
 
-        {/* ── FAKE ── */}
-        {!loading && data && !data.found && (
-          <div className="bg-red-50 border-2 border-red-400 rounded-2xl shadow-md p-6 flex flex-col items-center gap-4">
-            {/* Fake badge SVG */}
-            <div className="w-24 h-24 flex items-center justify-center">
-              <svg viewBox="0 0 100 100" className="w-full h-full">
-                <circle cx="50" cy="50" r="46" fill="#fef2f2" stroke="#ef4444" strokeWidth="4" />
-                <line x1="25" y1="25" x2="75" y2="75" stroke="#ef4444" strokeWidth="8" strokeLinecap="round" />
-                <line x1="75" y1="25" x2="25" y2="75" stroke="#ef4444" strokeWidth="8" strokeLinecap="round" />
-                <circle cx="50" cy="50" r="46" fill="none" stroke="#ef4444" strokeWidth="4" />
-              </svg>
-            </div>
-            <AlertTriangle size={28} className="text-red-500" />
-            <p className="text-red-700 font-bold text-lg text-center">{FAKE_MESSAGE}</p>
-            <p className="text-red-500 text-xs text-center">
-              UID: <span className="font-mono font-bold">{uid}</span>
-            </p>
-          </div>
-        )}
-
-        {/* ── FOUND ── */}
-        {!loading && data?.found && data.item && (
-          <>
-            {/* Authenticated badge */}
-            <div className="flex items-center gap-3 bg-green-50 border border-green-300 rounded-2xl px-4 py-3 shadow-sm">
-              <ShieldCheck size={28} className="text-green-500 shrink-0" />
+            {/* ── AUTHENTIC BADGE ── */}
+            <div className="flex items-center gap-3 bg-green-500/15 border border-green-500/40 rounded-2xl px-4 py-3 backdrop-blur-sm">
+              <div className="w-10 h-10 rounded-xl bg-green-500/20 flex items-center justify-center shrink-0">
+                <ShieldCheck size={22} className="text-green-400" />
+              </div>
               <div>
-                <p className="text-green-700 font-bold text-sm">Prodotto Autentico</p>
-                <p className="text-green-600 text-xs">Autenticità verificata con successo</p>
+                <p className="text-green-300 font-bold text-sm tracking-wide">PRODOTTO AUTENTICO</p>
+                <p className="text-green-400/70 text-xs">Autenticità verificata con successo</p>
               </div>
             </div>
 
-            {/* Lot / Supply */}
-            <div className="bg-white rounded-2xl shadow-md border border-gray-100 p-4">
-              <div className="flex items-center gap-2 mb-3">
-                <Package size={16} className="text-sky-500" />
-                <span className="text-xs font-bold text-gray-600 uppercase tracking-wide">{LOT_LABEL}</span>
-              </div>
-              <p className="text-base font-semibold text-gray-800 ml-6">
-                {data.item.lotto ?? <span className="text-gray-400 italic text-sm">N/D</span>}
-              </p>
+            {/* ── PRODUCT INFO BLOCK ── */}
+            <div className="bg-white/5 border border-white/10 rounded-2xl p-4 grid grid-cols-2 gap-x-4 gap-y-3">
+              <InfoRow label={LOT_LABEL}       value={item.lotto} />
+              <InfoRow label={PROD_CODE_LABEL} value={item.item_product_id} />
+              <InfoRow label="Variant"         value={product?.fld02} />
+              <InfoRow label="Info"            value={product?.fldd01} />
             </div>
 
-            {/* Product info */}
-            {data.product && (
-              <div className="bg-white rounded-2xl shadow-md border border-gray-100 p-4 flex flex-col gap-3">
-                {/* Product Code */}
-                <div>
-                  <p className="text-xs text-gray-400 font-medium">{PROD_CODE_LABEL}</p>
-                  <p className="text-base font-bold text-gray-800 mt-0.5">{data.item.item_product_id}</p>
+            {/* ── UID + country ── */}
+            <div className="bg-white/5 border border-white/10 rounded-xl px-4 py-3 flex flex-col gap-2">
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-widest text-[#00aeef]/60 mb-0.5">{UID_LABEL}</p>
+                <p className="font-mono text-[11px] text-white/50 break-all">{uid}</p>
+              </div>
+              {country && (
+                <div className="flex items-center gap-2 pt-2 border-t border-white/10">
+                  <MapPin size={13} className="text-[#00aeef]/60 shrink-0" />
+                  <span className="text-[11px] text-white/40">{SCANNED_IN}</span>
+                  <span className="text-[11px] font-semibold text-white/70">{country}</span>
                 </div>
+              )}
+            </div>
 
-                {/* fld02 */}
-                {data.product.fld02 && (
-                  <div className="border-t border-gray-100 pt-3">
-                    <p className="text-xs text-gray-400 font-medium">Descrizione</p>
-                    <p className="text-sm font-semibold text-gray-700 mt-0.5">{data.product.fld02}</p>
-                  </div>
-                )}
-
-                {/* fldd01 */}
-                {data.product.fldd01 && (
-                  <div className="border-t border-gray-100 pt-3">
-                    <p className="text-xs text-gray-400 font-medium">Info</p>
-                    <p className="text-sm font-semibold text-gray-700 mt-0.5">{data.product.fldd01}</p>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Action buttons */}
-            <div className="flex flex-col gap-3 mt-1">
+            {/* ── ACTION BUTTONS 2×2 grid ── */}
+            <div className="grid grid-cols-2 gap-3 mt-1">
               {/* Warranty */}
               <button
-                onClick={() => {/* sarà implementato */}}
-                className="flex items-center justify-between bg-gradient-to-r from-sky-500 to-blue-600 text-white rounded-2xl px-5 py-4 shadow-md active:scale-95 transition-transform"
+                onClick={() => {/* implementare */}}
+                className="flex flex-col items-center justify-center gap-2 bg-[#00aeef]/15 border border-[#00aeef]/30 rounded-2xl aspect-square active:scale-95 transition-transform hover:bg-[#00aeef]/25"
               >
-                <div className="flex items-center gap-3">
-                  <div className="bg-white/20 rounded-xl p-2">
-                    <ShieldCheck size={22} />
-                  </div>
-                  <span className="font-semibold text-sm">{WARRANTY_LABEL}</span>
+                <div className="w-10 h-10 rounded-xl bg-[#00aeef]/20 flex items-center justify-center">
+                  <ShieldCheck size={22} className="text-[#00aeef]" />
                 </div>
-                <ChevronRight size={20} className="opacity-70" />
+                <span className="text-xs font-semibold text-white/80 text-center px-2 leading-tight">{WARRANTY_LABEL}</span>
               </button>
 
               {/* Manuals */}
               <button
-                onClick={() => {/* sarà implementato */}}
-                className="flex items-center justify-between bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-2xl px-5 py-4 shadow-md active:scale-95 transition-transform"
+                onClick={() => {/* implementare */}}
+                className="flex flex-col items-center justify-center gap-2 bg-emerald-500/15 border border-emerald-500/30 rounded-2xl aspect-square active:scale-95 transition-transform hover:bg-emerald-500/25"
               >
-                <div className="flex items-center gap-3">
-                  <div className="bg-white/20 rounded-xl p-2">
-                    <BookOpen size={22} />
-                  </div>
-                  <span className="font-semibold text-sm">{MANUALS_LABEL}</span>
+                <div className="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center">
+                  <BookOpen size={22} className="text-emerald-400" />
                 </div>
-                <ChevronRight size={20} className="opacity-70" />
+                <span className="text-xs font-semibold text-white/80 text-center px-2 leading-tight">{MANUALS_LABEL}</span>
               </button>
             </div>
-          </>
-        )}
-      </main>
+
+          </div>
+        </main>
+      )}
 
       {/* ── FOOTER ── */}
-      <footer className="text-center py-4 text-xs text-gray-400 border-t border-gray-100">
-        Powered by Bett Sistemi &mdash; RFID NFC Technology
-      </footer>
+      {!loading && (
+        <footer className="text-center py-4 text-[10px] text-white/20 tracking-widest uppercase border-t border-white/5">
+          Powered by Bett Sistemi &mdash; RFID NFC Technology
+        </footer>
+      )}
     </div>
   );
 }
@@ -220,8 +211,8 @@ function BettContent() {
 export default function BettPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 size={36} className="animate-spin text-sky-400" />
+      <div className="min-h-screen bg-[#0a0e1a] flex items-center justify-center">
+        <Loader2 size={36} className="animate-spin text-[#00aeef]" />
       </div>
     }>
       <BettContent />
