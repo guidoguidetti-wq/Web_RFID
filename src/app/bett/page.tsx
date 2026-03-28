@@ -48,6 +48,9 @@ function BettContent() {
   const [loading, setLoading] = useState(true);
   const [country, setCountry]         = useState<string>('');
   const [countryCode, setCountryCode] = useState<string>('');
+  const [region, setRegion]           = useState<string>('');
+  const [city, setCity]               = useState<string>('');
+  const [ip, setIp]                   = useState<string>('');
 
   useEffect(() => {
     if (!uid) { setLoading(false); return; }
@@ -64,6 +67,9 @@ function BettContent() {
       .then(d => {
         setCountry(d.country_name ?? '');
         setCountryCode(d.country_code ?? '');
+        setRegion(d.region ?? '');
+        setCity(d.city ?? '');
+        setIp(d.ip ?? '');
       })
       .catch(() => {});
   }, []);
@@ -111,6 +117,33 @@ function BettContent() {
             <p className="font-mono text-xs text-white/60 break-all">{uid}</p>
           </div>
 
+          {/* Location info */}
+          {(country || ip) && (
+            <div className="bg-white/5 border border-white/10 rounded-xl px-5 py-3 flex flex-col gap-2 w-full">
+              {country && (
+                <div className="flex items-center gap-2">
+                  {countryCode && (
+                    <img
+                      src={`https://flagcdn.com/w20/${countryCode.toLowerCase()}.png`}
+                      alt={country}
+                      className="w-5 h-auto rounded-sm shrink-0"
+                    />
+                  )}
+                  <span className="text-[11px] text-white/40">{SCANNED_IN}</span>
+                  <span className="text-[11px] font-semibold text-white/70">
+                    {[city, region, country].filter(Boolean).join(', ')}
+                  </span>
+                </div>
+              )}
+              {ip && (
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] text-white/30 uppercase tracking-widest">IP</span>
+                  <span className="font-mono text-[11px] text-white/50">{ip}</span>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Contact buttons */}
           <div className="grid grid-cols-2 gap-3 w-full">
             <a
@@ -124,7 +157,7 @@ function BettContent() {
             </a>
 
             <a
-              href={`sms:${BETT_SMS_PHONE}?body=${encodeURIComponent(`Ho riscontrato una mancata validazione di un prodotto Bett Sistemi, la matricola è ${uid}, prego di contattarmi per ricevere istruzioni.`)}`}
+              href={`sms:${BETT_SMS_PHONE}?body=${encodeURIComponent(`Ho riscontrato una mancata validazione di un prodotto Bett Sistemi, la matricola è ${uid}. Posizione: ${[city, region, country].filter(Boolean).join(', ') || 'non disponibile'}. IP: ${ip || 'non disponibile'}. Prego di contattarmi per ricevere istruzioni.`)}`}
               className="flex flex-col items-center justify-center gap-2 bg-emerald-500/15 border border-emerald-500/30 rounded-2xl aspect-square active:scale-95 transition-transform hover:bg-emerald-500/25"
             >
               <div className="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center">
@@ -182,18 +215,30 @@ function BettContent() {
                 <p className="font-mono text-[11px] text-white/60 break-all">{uid}</p>
               </div>
 
-              {/* Country with flag */}
-              {country && (
-                <div className="flex items-center gap-2">
-                  {countryCode && (
-                    <img
-                      src={`https://flagcdn.com/w20/${countryCode.toLowerCase()}.png`}
-                      alt={country}
-                      className="w-5 h-auto rounded-sm shrink-0"
-                    />
+              {/* Country / region / IP */}
+              {(country || ip) && (
+                <div className="flex flex-col gap-1.5">
+                  {country && (
+                    <div className="flex items-center gap-2">
+                      {countryCode && (
+                        <img
+                          src={`https://flagcdn.com/w20/${countryCode.toLowerCase()}.png`}
+                          alt={country}
+                          className="w-5 h-auto rounded-sm shrink-0"
+                        />
+                      )}
+                      <span className="text-[11px] text-white/40">{SCANNED_IN}</span>
+                      <span className="text-[11px] font-semibold text-white/70">
+                        {[city, region, country].filter(Boolean).join(', ')}
+                      </span>
+                    </div>
                   )}
-                  <span className="text-[11px] text-white/40">{SCANNED_IN}</span>
-                  <span className="text-[11px] font-semibold text-white/70">{country}</span>
+                  {ip && (
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] text-green-400/40 uppercase tracking-widest">IP</span>
+                      <span className="font-mono text-[11px] text-white/50">{ip}</span>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
