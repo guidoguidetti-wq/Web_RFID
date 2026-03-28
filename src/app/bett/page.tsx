@@ -18,13 +18,6 @@ const FAKE_MESSAGE    = process.env.NEXT_PUBLIC_BETT_FAKE_MESSAGE          ?? 'P
 const WARRANTY_LABEL  = process.env.NEXT_PUBLIC_BETT_WARRANTY_LABEL       ?? 'Garanzia';
 const MANUALS_LABEL   = process.env.NEXT_PUBLIC_BETT_MANUALS_LABEL        ?? 'Manuali';
 
-/** Converte country code ISO-2 (es. "IT") in emoji bandiera */
-function flagEmoji(code: string): string {
-  return [...code.toUpperCase()]
-    .map(c => String.fromCodePoint(0x1f1e0 + c.charCodeAt(0) - 65))
-    .join('');
-}
-
 interface BettData {
   found: boolean;
   item?: Record<string, any>;
