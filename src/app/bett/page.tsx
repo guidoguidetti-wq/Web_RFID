@@ -7,6 +7,8 @@ import {
   BookOpen,
   Loader2,
   ShieldAlert,
+  Phone,
+  MessageSquare,
 } from 'lucide-react';
 
 const PAGE_TITLE      = process.env.NEXT_PUBLIC_BETT_PAGE_TITLE           ?? 'RFID NFC Authenticator';
@@ -15,6 +17,7 @@ const SCANNED_IN      = process.env.NEXT_PUBLIC_BETT_SCANNED_IN_LABEL     ?? 'Sc
 const LOT_LABEL       = process.env.NEXT_PUBLIC_BETT_LOT_LABEL             ?? 'Lot/Supply';
 const PROD_CODE_LABEL = process.env.NEXT_PUBLIC_BETT_PRODUCT_CODE_LABEL   ?? 'Product Code';
 const FAKE_MESSAGE    = process.env.NEXT_PUBLIC_BETT_FAKE_MESSAGE          ?? 'Prodotto Non Autentico';
+const BETT_PHONE      = process.env.NEXT_PUBLIC_BETT_PHONE                 ?? '+393492284826';
 const WARRANTY_LABEL  = process.env.NEXT_PUBLIC_BETT_WARRANTY_LABEL       ?? 'Garanzia';
 const MANUALS_LABEL   = process.env.NEXT_PUBLIC_BETT_MANUALS_LABEL        ?? 'Manuali';
 
@@ -106,6 +109,29 @@ function BettContent() {
             <p className="text-[10px] text-white/40 uppercase tracking-widest mb-1">{UID_LABEL}</p>
             <p className="font-mono text-xs text-white/60 break-all">{uid}</p>
           </div>
+
+          {/* Contact buttons */}
+          <div className="grid grid-cols-2 gap-3 w-full">
+            <a
+              href={`tel:${BETT_PHONE}`}
+              className="flex flex-col items-center justify-center gap-2 bg-[#00aeef]/15 border border-[#00aeef]/30 rounded-2xl aspect-square active:scale-95 transition-transform hover:bg-[#00aeef]/25"
+            >
+              <div className="w-10 h-10 rounded-xl bg-[#00aeef]/20 flex items-center justify-center">
+                <Phone size={22} className="text-[#00aeef]" />
+              </div>
+              <span className="text-xs font-semibold text-white/80 text-center px-2 leading-tight">Chiama Bett Sistemi</span>
+            </a>
+
+            <a
+              href={`sms:${BETT_PHONE}`}
+              className="flex flex-col items-center justify-center gap-2 bg-emerald-500/15 border border-emerald-500/30 rounded-2xl aspect-square active:scale-95 transition-transform hover:bg-emerald-500/25"
+            >
+              <div className="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center">
+                <MessageSquare size={22} className="text-emerald-400" />
+              </div>
+              <span className="text-xs font-semibold text-white/80 text-center px-2 leading-tight">Invia SMS a Bett Sistemi</span>
+            </a>
+          </div>
         </main>
       )}
 
@@ -131,7 +157,7 @@ function BettContent() {
             </div>
           )}
 
-          <div className="px-5 flex flex-col gap-4 pb-8 -mt-4 relative z-10">
+          <div className="px-5 flex flex-col gap-4 pb-8 mt-4 relative z-10">
 
             {/* ── AUTHENTIC BADGE (includes UID + country) ── */}
             <div className="bg-green-500/15 border border-green-500/40 rounded-2xl px-4 py-3 backdrop-blur-sm flex flex-col gap-3">
