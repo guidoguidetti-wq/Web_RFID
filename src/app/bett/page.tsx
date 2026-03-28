@@ -123,7 +123,7 @@ function BettContent() {
             </a>
 
             <a
-              href={`sms:${BETT_PHONE}`}
+              href={`sms:${BETT_PHONE}?body=${encodeURIComponent(`Ho riscontrato una mancata validazione di un prodotto Bett Sistemi, la matricola è ${uid}, prego di contattarmi per ricevere istruzioni.`)}`}
               className="flex flex-col items-center justify-center gap-2 bg-emerald-500/15 border border-emerald-500/30 rounded-2xl aspect-square active:scale-95 transition-transform hover:bg-emerald-500/25"
             >
               <div className="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center">
