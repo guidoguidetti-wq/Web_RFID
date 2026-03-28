@@ -2,7 +2,7 @@
 
 import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { Loader2, ShieldCheck, ArrowLeft } from 'lucide-react';
+import { Loader2, ShieldCheck, ArrowLeft, FileText, Download } from 'lucide-react';
 
 function GaranziaContent() {
   const searchParams = useSearchParams();
@@ -11,6 +11,8 @@ function GaranziaContent() {
 
   const [epc, setEpc]                   = useState<string | null>(undefined as any);
   const [dateCreation, setDateCreation] = useState<string | null>(null);
+  const [docUrl, setDocUrl]             = useState<string | null>(null);
+  const [docFilename, setDocFilename]   = useState<string | null>(null);
   const [loading, setLoading]           = useState(true);
   const [activating, setActivating]     = useState(false);
   const [error, setError]               = useState<string | null>(null);
@@ -22,6 +24,8 @@ function GaranziaContent() {
       .then(d => {
         setEpc(d.epc ?? null);
         setDateCreation(d.date_creation ?? null);
+        setDocUrl(d.docUrl ?? null);
+        setDocFilename(d.docFilename ?? null);
       })
       .catch(() => setError('Errore caricamento dati'))
       .finally(() => setLoading(false));
@@ -38,7 +42,7 @@ function GaranziaContent() {
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error ?? 'Errore durante l\'attivazione');
+        setError(data.error ?? "Errore durante l'attivazione");
       } else {
         setEpc(data.epc);
       }
@@ -77,7 +81,7 @@ function GaranziaContent() {
       </div>
 
       {/* ── CONTENT ── */}
-      <main className="flex-1 flex flex-col items-center px-6 gap-6 py-6 max-w-md mx-auto w-full">
+      <main className="flex-1 flex flex-col items-center px-6 gap-5 py-6 max-w-md mx-auto w-full">
 
         {loading && (
           <div className="flex-1 flex items-center justify-center">
@@ -87,12 +91,35 @@ function GaranziaContent() {
 
         {!loading && (
           <>
-            {/* Immagine garanzia */}
+            {/* Immagine garanzia (più piccola) */}
             <img
               src="/Garanzia.jpg"
               alt="Certificato di Garanzia Bett Sistemi"
-              className="w-full max-w-xs object-contain drop-shadow-xl"
+              className="w-40 object-contain drop-shadow-xl"
             />
+
+            {/* Pulsante Visualizza Garanzia */}
+            {docUrl && (
+              <div className="flex gap-3 w-full">
+                <a
+                  href={docUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex-1 flex items-center justify-center gap-2 bg-white/5 border border-white/15 hover:bg-white/10 active:scale-95 transition-all rounded-2xl py-3.5 text-sm font-semibold text-white/80"
+                >
+                  <FileText size={18} className="text-[#00aeef]" />
+                  Visualizza Garanzia
+                </a>
+                <a
+                  href={docUrl}
+                  download={docFilename ?? 'garanzia'}
+                  className="flex items-center justify-center gap-2 bg-white/5 border border-white/15 hover:bg-white/10 active:scale-95 transition-all rounded-2xl px-4 py-3.5"
+                  title="Scarica documento"
+                >
+                  <Download size={18} className="text-[#00aeef]" />
+                </a>
+              </div>
+            )}
 
             {/* Data registrazione prodotto */}
             {formattedDate && (

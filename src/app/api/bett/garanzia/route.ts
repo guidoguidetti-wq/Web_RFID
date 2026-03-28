@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db';
 
-/* GET /api/bett/garanzia?uid=... → restituisce epc e date_creation */
+/* GET /api/bett/garanzia?uid=... → restituisce epc, date_creation e documento garanzia */
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const uid = searchParams.get('uid') ?? searchParams.get('UID');
@@ -10,11 +10,42 @@ export async function GET(req: NextRequest) {
 
   try {
     const result = await query(
-      'SELECT epc, date_creation FROM "Items" WHERE item_id = $1',
+      'SELECT epc, date_creation, lotto FROM "Items" WHERE item_id = $1',
       [uid]
     );
     if (result.rows.length === 0) return NextResponse.json({ error: 'Item non trovato' }, { status: 404 });
-    return NextResponse.json(result.rows[0]);
+
+    const item = result.rows[0];
+
+    /* Cerca documento garanzia (att_type = 'Altro') tramite lotto → work_order */
+    let docUrl: string | null = null;
+    let docFilename: string | null = null;
+    if (item.lotto) {
+      const woResult = await query(
+        'SELECT wo_id FROM work_orders WHERE wo_number = $1 LIMIT 1',
+        [item.lotto]
+      );
+      if (woResult.rows.length > 0) {
+        const wo_id = woResult.rows[0].wo_id;
+        const attachResult = await query(
+          `SELECT att_url, att_filename FROM work_orders_attach
+           WHERE att_wo_id = $1 AND att_type = 'Altro'
+           ORDER BY att_created_at ASC LIMIT 1`,
+          [wo_id]
+        );
+        if (attachResult.rows.length > 0) {
+          docUrl      = attachResult.rows[0].att_url;
+          docFilename = attachResult.rows[0].att_filename;
+        }
+      }
+    }
+
+    return NextResponse.json({
+      epc:           item.epc ?? null,
+      date_creation: item.date_creation,
+      docUrl,
+      docFilename,
+    });
   } catch (err) {
     console.error(err);
     return NextResponse.json({ error: 'Errore database' }, { status: 500 });
