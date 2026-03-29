@@ -179,15 +179,11 @@ function ManualiContent() {
 
     /* Esegui azione */
     if (action === 'seen') {
-      window.open(url, '_blank', 'noopener,noreferrer');
+      /* Viewer interno → back button funziona su iOS */
+      router.push(`/bett/manuali/viewer?url=${encodeURIComponent(url)}&filename=${encodeURIComponent(filename)}`);
     } else {
-      const a = document.createElement('a');
-      a.href     = url;
-      a.download = filename;
-      a.target   = '_blank';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
+      /* Download: window.location.href compatibile iOS */
+      window.location.href = url;
     }
   }
 
@@ -203,11 +199,10 @@ function ManualiContent() {
     if (alreadyTracked) {
       /* già accettato in precedenza → vai diretto */
       if (action === 'seen') {
-        window.open(url, '_blank', 'noopener,noreferrer');
+        router.push(`/bett/manuali/viewer?url=${encodeURIComponent(url)}&filename=${encodeURIComponent(filename)}`);
       } else {
         const a = document.createElement('a');
-        a.href = url; a.download = filename; a.target = '_blank';
-        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        window.location.href = url;
       }
     } else {
       setConfirm({ att_id, action, url, filename });
