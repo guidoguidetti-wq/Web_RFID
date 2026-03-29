@@ -29,7 +29,7 @@ export async function GET(req: NextRequest) {
         const wo_id = woResult.rows[0].wo_id;
         const attachResult = await query(
           `SELECT att_url, att_filename FROM work_orders_attach
-           WHERE att_wo_id = $1 AND att_type = 'Altro'
+           WHERE att_wo_id = $1 AND att_type IN ('Altro', 'altro')
            ORDER BY att_created_at ASC LIMIT 1`,
           [wo_id]
         );

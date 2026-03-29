@@ -34,7 +34,7 @@ export async function GET(req: NextRequest) {
         const attachResult = await query(
           `SELECT att_id, att_filename, att_url, att_mime, att_size, att_seen, att_down
            FROM work_orders_attach
-           WHERE att_wo_id = $1 AND att_type = 'Files (Manuali)'
+           WHERE att_wo_id = $1 AND att_type IN ('file', 'Files (Manuali)')
            ORDER BY att_created_at ASC`,
           [wo_id]
         );
