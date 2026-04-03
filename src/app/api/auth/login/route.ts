@@ -8,7 +8,6 @@ export async function POST(req: NextRequest) {
     const { username, password } = await req.json();
     console.log('Login attempt for username:', username);
 
-    // Test database connection
     if (!process.env.DATABASE_URL) {
       console.error('DATABASE_URL not configured!');
       return NextResponse.json({
@@ -27,10 +26,27 @@ export async function POST(req: NextRequest) {
     if (result.rows.length > 0) {
       const user = result.rows[0];
       console.log('Login successful for user:', user.usr_name);
-      // In un'app reale qui useresti un JWT o una sessione
+
+      // Fetch enabled functions for this user
+      let functions: string[] = [];
+      try {
+        const fnResult = await query(
+          'SELECT usr_f_label FROM users_functions WHERE usr_f_usr_id = $1 AND usr_f_enabled = true',
+          [user.usr_id]
+        );
+        functions = fnResult.rows.map((r: any) => r.usr_f_label);
+      } catch (fnError) {
+        console.warn('Could not fetch user functions:', fnError);
+      }
+
       return NextResponse.json({
         success: true,
-        user: { id: user.usr_id, name: user.usr_name, place: user.usr_def_place }
+        user: {
+          id: user.usr_id,
+          name: user.usr_name,
+          place: user.usr_def_place,
+          functions,
+        }
       });
     } else {
       console.log('Invalid credentials for username:', username);

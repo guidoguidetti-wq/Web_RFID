@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Save, ArrowLeft } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 
 interface UserFunction {
   usr_f_usr_id: number;
@@ -17,12 +17,25 @@ export default function UserFunzioniPage() {
   const router = useRouter();
   const [rows, setRows] = useState<UserFunction[]>([]);
   const [loading, setLoading] = useState(true);
-  const [dirtyRows, setDirtyRows] = useState<Set<number>>(new Set());
-  const [savingRows, setSavingRows] = useState<Set<number>>(new Set());
+  const [userName, setUserName] = useState<string>('');
 
   useEffect(() => {
     fetchFunctions();
+    fetchUserName();
   }, [id]);
+
+  const fetchUserName = async () => {
+    try {
+      const res = await fetch('/api/users');
+      if (res.ok) {
+        const users = await res.json();
+        const user = users.find((u: any) => String(u.usr_id) === String(id));
+        if (user) setUserName(user.usr_name);
+      }
+    } catch {
+      // noop
+    }
+  };
 
   const fetchFunctions = async () => {
     setLoading(true);
@@ -31,7 +44,6 @@ export default function UserFunzioniPage() {
       if (res.ok) {
         const data = await res.json();
         setRows(data);
-        setDirtyRows(new Set());
       }
     } catch (error) {
       console.error('Errore nel caricamento funzioni:', error);
@@ -40,35 +52,31 @@ export default function UserFunzioniPage() {
     }
   };
 
-  const handleChange = (funId: number, field: keyof UserFunction, value: any) => {
-    setRows(prev => prev.map(r => r.usr_f_fun_id === funId ? { ...r, [field]: value } : r));
-    setDirtyRows(prev => new Set(prev).add(funId));
-  };
-
-  const handleSave = async (row: UserFunction) => {
-    setSavingRows(prev => new Set(prev).add(row.usr_f_fun_id));
+  const saveRow = async (row: UserFunction) => {
     try {
-      const res = await fetch('/api/user-functions', {
+      await fetch('/api/user-functions', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(row),
       });
-      if (res.ok) {
-        setDirtyRows(prev => {
-          const next = new Set(prev);
-          next.delete(row.usr_f_fun_id);
-          return next;
-        });
-      }
     } catch (error) {
       console.error('Errore nel salvataggio:', error);
-    } finally {
-      setSavingRows(prev => {
-        const next = new Set(prev);
-        next.delete(row.usr_f_fun_id);
-        return next;
-      });
     }
+  };
+
+  const handleChange = (funId: number, field: keyof UserFunction, value: any) => {
+    setRows(prev => prev.map(r => r.usr_f_fun_id === funId ? { ...r, [field]: value } : r));
+  };
+
+  const handleBlur = (row: UserFunction) => {
+    saveRow(row);
+  };
+
+  const handleCheckboxChange = (funId: number, checked: boolean) => {
+    const updatedRows = rows.map(r => r.usr_f_fun_id === funId ? { ...r, usr_f_enabled: checked } : r);
+    setRows(updatedRows);
+    const row = updatedRows.find(r => r.usr_f_fun_id === funId);
+    if (row) saveRow(row);
   };
 
   return (
@@ -81,7 +89,9 @@ export default function UserFunzioniPage() {
           <ArrowLeft size={18} />
           <span>Utenti</span>
         </button>
-        <h1 className="text-xl font-bold text-gray-800">Funzioni Utente #{id}</h1>
+        <h1 className="text-xl font-bold text-gray-800">
+          Funzioni Utente — {userName || `#${id}`}
+        </h1>
       </div>
 
       <div className="bg-white rounded-xl shadow overflow-hidden border border-gray-200">
@@ -89,9 +99,8 @@ export default function UserFunzioniPage() {
           <thead>
             <tr className="bg-gray-50 border-b border-gray-200">
               <th className="px-2 py-2 font-semibold text-gray-600 w-28">Prog. Funzione</th>
-              <th className="px-2 py-2 font-semibold text-gray-600">Funzione</th>
               <th className="px-2 py-2 font-semibold text-gray-600 text-center w-20">Abilitata</th>
-              <th className="px-2 py-2 font-semibold text-gray-600 text-right w-12"></th>
+              <th className="px-2 py-2 font-semibold text-gray-600">Funzione</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
@@ -103,6 +112,15 @@ export default function UserFunzioniPage() {
                     className="w-full px-1 py-0.5 border border-gray-200 rounded focus:outline-none focus:border-blue-400"
                     value={row.usr_f_prog}
                     onChange={(e) => handleChange(row.usr_f_fun_id, 'usr_f_prog', Number(e.target.value))}
+                    onBlur={() => handleBlur(row)}
+                  />
+                </td>
+                <td className="px-2 py-1 text-center">
+                  <input
+                    type="checkbox"
+                    className="w-4 h-4 cursor-pointer"
+                    checked={row.usr_f_enabled}
+                    onChange={(e) => handleCheckboxChange(row.usr_f_fun_id, e.target.checked)}
                   />
                 </td>
                 <td className="px-2 py-1">
@@ -111,27 +129,8 @@ export default function UserFunzioniPage() {
                     className="w-full px-1 py-0.5 border border-gray-200 rounded focus:outline-none focus:border-blue-400"
                     value={row.usr_f_label}
                     onChange={(e) => handleChange(row.usr_f_fun_id, 'usr_f_label', e.target.value)}
+                    onBlur={() => handleBlur(row)}
                   />
-                </td>
-                <td className="px-2 py-1 text-center">
-                  <input
-                    type="checkbox"
-                    className="w-4 h-4 cursor-pointer"
-                    checked={row.usr_f_enabled}
-                    onChange={(e) => handleChange(row.usr_f_fun_id, 'usr_f_enabled', e.target.checked)}
-                  />
-                </td>
-                <td className="px-2 py-1 text-right">
-                  {dirtyRows.has(row.usr_f_fun_id) && (
-                    <button
-                      onClick={() => handleSave(row)}
-                      disabled={savingRows.has(row.usr_f_fun_id)}
-                      className="text-green-600 hover:text-green-800 disabled:opacity-40"
-                      title="Salva"
-                    >
-                      <Save size={16} />
-                    </button>
-                  )}
                 </td>
               </tr>
             ))}

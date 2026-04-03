@@ -15,6 +15,7 @@ import {
   Wrench,
 } from 'lucide-react';
 import Link from 'next/link';
+import { useEffect, useState } from 'react';
 
 const menuItems = [
   { name: 'Utenti', icon: Users, href: '/utenti', color: 'from-blue-500 to-blue-600' },
@@ -28,42 +29,49 @@ const menuItems = [
   { name: 'CheckLists', icon: ListChecks, href: '/checklists', color: 'from-cyan-500 to-cyan-600' },
   { name: 'Letture HID', icon: ScanLine, href: '/hid-reads', color: 'from-rose-500 to-rose-600' },
   { name: 'Landing Bett', icon: ShieldCheck, href: '/bett', color: 'from-sky-500 to-blue-600' },
-  { name: 'Work Orders',  icon: Wrench,      href: '/work-orders', color: 'from-violet-500 to-purple-600' },
+  { name: 'Work Orders', icon: Wrench, href: '/work-orders', color: 'from-violet-500 to-purple-600' },
 ];
 
 export default function MenuPage() {
+  const [visibleItems, setVisibleItems] = useState(menuItems);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem('user');
+      if (raw) {
+        const user = JSON.parse(raw);
+        if (Array.isArray(user.functions) && user.functions.length > 0) {
+          const enabledLabels = user.functions.map((f: string) => f.toLowerCase());
+          setVisibleItems(menuItems.filter(item => enabledLabels.includes(item.name.toLowerCase())));
+        }
+      }
+    } catch {
+      // fallback: mostra tutto
+    }
+  }, []);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-gray-100">
-      {/* Grid Menu */}
       <div className="flex justify-center px-4 py-8">
         <div className="grid grid-cols-3 md:grid-cols-5 lg:grid-cols-5 gap-3 max-w-5xl w-full">
-          {menuItems.map((item) => (
+          {visibleItems.map((item) => (
             <Link
               key={item.name}
               href={item.href}
               className="group relative overflow-hidden bg-white rounded-xl shadow hover:shadow-xl transition-all duration-300 border border-gray-200 flex flex-col items-center justify-center text-center p-3 aspect-square hover:-translate-y-1"
             >
-              {/* Background Gradient on Hover */}
               <div className={`absolute inset-0 bg-gradient-to-br ${item.color} opacity-0 group-hover:opacity-5 transition-opacity duration-300`}></div>
-
-              {/* Icon */}
               <div className={`relative p-3 rounded-xl bg-gradient-to-br ${item.color} text-white shadow group-hover:scale-110 group-hover:rotate-3 transition-all duration-300`}>
                 <item.icon size={30} strokeWidth={2} />
               </div>
-
-              {/* Label */}
               <span className="relative mt-2 text-sm font-bold text-gray-800 group-hover:text-blue-600 transition-colors duration-300">
                 {item.name}
               </span>
-
-              {/* Decorative corner */}
               <div className={`absolute top-0 right-0 w-8 h-8 bg-gradient-to-br ${item.color} opacity-10 rounded-bl-2xl`}></div>
             </Link>
           ))}
         </div>
       </div>
-
-      {/* Footer */}
       <div className="text-center pb-6 text-sm text-gray-500">
         <p>Powered by RFID Technology</p>
       </div>
