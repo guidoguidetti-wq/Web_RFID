@@ -11,13 +11,20 @@ interface Column {
   options?: { label: string; value: any }[];
 }
 
+interface ExtraAction {
+  icon: React.ReactNode;
+  title: string;
+  onClick: (item: any) => void;
+}
+
 interface ManagementTableProps {
   title: string;
   columns: Column[];
   apiEndpoint: string;
+  extraActions?: ExtraAction[];
 }
 
-export default function ManagementTable({ title, columns, apiEndpoint }: ManagementTableProps) {
+export default function ManagementTable({ title, columns, apiEndpoint, extraActions }: ManagementTableProps) {
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingItem, setEditingItem] = useState<any>(null);
@@ -187,11 +194,21 @@ export default function ManagementTable({ title, columns, apiEndpoint }: Managem
                     ))}
                     <td className="px-6 py-4 text-right">
                       <div className="flex justify-end gap-3">
+                        {extraActions?.map((action, idx) => (
+                          <button
+                            key={idx}
+                            title={action.title}
+                            onClick={() => action.onClick(item)}
+                            className="text-purple-600 hover:text-purple-800"
+                          >
+                            {action.icon}
+                          </button>
+                        ))}
                         <button onClick={() => setEditingItem(item)} className="text-blue-600 hover:text-blue-800">
                           <Pencil size={18} />
                         </button>
-                        <button 
-                          onClick={() => handleDelete(item[columns.find(c => c.isId)?.key || 'id'])} 
+                        <button
+                          onClick={() => handleDelete(item[columns.find(c => c.isId)?.key || 'id'])}
                           className="text-red-600 hover:text-red-800"
                         >
                           <Trash2 size={18} />

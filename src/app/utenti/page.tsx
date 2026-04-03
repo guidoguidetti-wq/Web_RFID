@@ -2,6 +2,8 @@
 
 import ManagementTable from '@/components/ManagementTable';
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { Settings } from 'lucide-react';
 
 interface Column {
   key: string;
@@ -12,13 +14,15 @@ interface Column {
 }
 
 export default function UtentiPage() {
+  const router = useRouter();
+
   const [columns, setColumns] = useState<Column[]>([
     { key: 'usr_id', label: 'ID', isId: true },
     { key: 'usr_name', label: 'Username' },
     { key: 'usr_pwd', label: 'Password', type: 'password' },
-    { 
-      key: 'usr_role', 
-      label: 'Ruolo', 
+    {
+      key: 'usr_role',
+      label: 'Ruolo',
       type: 'select',
       options: [
         { label: 'Admin', value: 0 },
@@ -26,11 +30,10 @@ export default function UtentiPage() {
         { label: 'User', value: 2 }
       ]
     },
-    { key: 'usr_def_place', label: 'Default Place', type: 'select', options: [] } // Initial empty options
+    { key: 'usr_def_place', label: 'Default Place', type: 'select', options: [] }
   ]);
 
   useEffect(() => {
-    // Fetch places to populate the dropdown
     const fetchPlaces = async () => {
       try {
         const res = await fetch('/api/places');
@@ -38,9 +41,8 @@ export default function UtentiPage() {
           const places = await res.json();
           const placeOptions = places.map((p: any) => ({
             label: p.place_name,
-            value: p.place_id // Assuming place_id is the value stored in usr_def_place
+            value: p.place_id
           }));
-          
           setColumns(prev => prev.map(col => {
             if (col.key === 'usr_def_place') {
               return { ...col, options: placeOptions };
@@ -49,19 +51,28 @@ export default function UtentiPage() {
           }));
         }
       } catch (error) {
-        console.error("Failed to fetch places", error);
+        console.error('Failed to fetch places', error);
       }
     };
 
     fetchPlaces();
   }, []);
 
+  const extraActions = [
+    {
+      icon: <Settings size={18} />,
+      title: 'Funzioni',
+      onClick: (item: any) => router.push(`/utenti/${item.usr_id}/funzioni`),
+    },
+  ];
+
   return (
     <div className="min-h-screen bg-gray-50">
-      <ManagementTable 
-        title="Gestione Utenti" 
-        columns={columns} 
-        apiEndpoint="/api/users" 
+      <ManagementTable
+        title="Gestione Utenti"
+        columns={columns}
+        apiEndpoint="/api/users"
+        extraActions={extraActions}
       />
     </div>
   );
