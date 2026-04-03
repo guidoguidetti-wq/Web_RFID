@@ -2,15 +2,19 @@ import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db';
 
 async function syncUserFunctions(usrId: number) {
-  await query(
-    `INSERT INTO user_functions (usr_f_usr_id, usr_f_fun_id, usr_f_prog, usr_f_label, usr_f_enabled)
-     SELECT $1, fun_id, 0, fun_label, false
-     FROM functions
-     WHERE fun_id NOT IN (
-       SELECT usr_f_fun_id FROM user_functions WHERE usr_f_usr_id = $1
-     )`,
-    [usrId]
-  );
+  try {
+    await query(
+      `INSERT INTO users_functions (usr_f_usr_id, usr_f_fun_id, usr_f_prog, usr_f_label, usr_f_enabled)
+       SELECT $1, fun_id, 0, fun_label, false
+       FROM functions
+       WHERE fun_id NOT IN (
+         SELECT usr_f_fun_id FROM users_functions WHERE usr_f_usr_id = $1
+       )`,
+      [usrId]
+    );
+  } catch (error) {
+    console.warn('syncUserFunctions skipped:', error);
+  }
 }
 
 export async function GET() {

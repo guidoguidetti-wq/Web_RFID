@@ -9,7 +9,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'usr_id richiesto' }, { status: 400 });
     }
     const result = await query(
-      'SELECT * FROM user_functions WHERE usr_f_usr_id = $1 ORDER BY usr_f_fun_id ASC',
+      'SELECT * FROM users_functions WHERE usr_f_usr_id = $1 ORDER BY usr_f_fun_id ASC',
       [usrId]
     );
     return NextResponse.json(result.rows);
@@ -22,7 +22,7 @@ export async function PUT(req: NextRequest) {
   try {
     const { usr_f_usr_id, usr_f_fun_id, usr_f_prog, usr_f_label, usr_f_enabled } = await req.json();
     const result = await query(
-      `UPDATE user_functions
+      `UPDATE users_functions
        SET usr_f_prog = $1, usr_f_label = $2, usr_f_enabled = $3
        WHERE usr_f_usr_id = $4 AND usr_f_fun_id = $5
        RETURNING *`,
