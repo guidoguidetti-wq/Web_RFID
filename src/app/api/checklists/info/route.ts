@@ -17,9 +17,25 @@ export async function GET() {
        ORDER BY ordinal_position`,
       []
     );
+    const items = await query(
+      `SELECT table_schema, column_name, data_type
+       FROM information_schema.columns
+       WHERE table_name = 'checklist_items'
+       ORDER BY table_schema, ordinal_position`,
+      []
+    );
+    const allTables = await query(
+      `SELECT table_schema, table_name
+       FROM information_schema.tables
+       WHERE table_name ILIKE '%checklist%' OR table_name ILIKE '%item%'
+       ORDER BY table_schema, table_name`,
+      []
+    );
     return NextResponse.json({
       checklist_columns: cols.rows,
       checklist_products_columns: prods.rows,
+      checklist_items_columns: items.rows,
+      related_tables: allTables.rows,
     });
   } catch (error: any) {
     return NextResponse.json({ error: error?.message }, { status: 500 });

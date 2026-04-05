@@ -6,21 +6,34 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const place = searchParams.get('place');
 
-    let sql = `SELECT c.*,
-      (SELECT COUNT(*)::int FROM checklist_products WHERE ckp_chl_id = c.chk_id) AS n_products,
-      (SELECT COUNT(*)::int FROM checklist_items WHERE chi_chk_id = c.chk_id) AS n_items
-    FROM "checklist" c`;
     const params: any[] = [];
+    const whereClause = place ? ' WHERE c.chk_place = $1' : '';
+    if (place) params.push(place);
 
-    if (place) {
-      sql += ' WHERE c.chk_place = $1';
-      params.push(place);
+    // Try with n_items subquery; fall back gracefully if checklist_items table doesn't exist yet
+    let rows: any[];
+    try {
+      const result = await query(
+        `SELECT c.*,
+          (SELECT COUNT(*)::int FROM checklist_products WHERE ckp_chl_id = c.chk_id) AS n_products,
+          (SELECT COUNT(*)::int FROM checklist_items WHERE chi_chk_id = c.chk_id) AS n_items
+         FROM "checklist" c${whereClause} ORDER BY c.chk_code ASC`,
+        params
+      );
+      rows = result.rows;
+    } catch {
+      // checklist_items table may not exist yet — return 0 for n_items
+      const result = await query(
+        `SELECT c.*,
+          (SELECT COUNT(*)::int FROM checklist_products WHERE ckp_chl_id = c.chk_id) AS n_products,
+          0 AS n_items
+         FROM "checklist" c${whereClause} ORDER BY c.chk_code ASC`,
+        params
+      );
+      rows = result.rows;
     }
 
-    sql += ' ORDER BY c.chk_code ASC';
-
-    const result = await query(sql, params);
-    return NextResponse.json(result.rows);
+    return NextResponse.json(rows);
   } catch (error: any) {
     console.error('Error fetching checklists:', error);
     return NextResponse.json({ error: 'Errore nel recupero checklist', detail: error?.message }, { status: 500 });
