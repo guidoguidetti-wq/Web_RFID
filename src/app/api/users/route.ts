@@ -59,6 +59,7 @@ export async function DELETE(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const id = searchParams.get('id');
+    await query('DELETE FROM users_functions WHERE usr_f_usr_id = $1', [id]);
     await query('DELETE FROM users WHERE usr_id = $1', [id]);
     return NextResponse.json({ success: true });
   } catch (error) {

@@ -66,18 +66,20 @@ export default function ProductItemsPage() {
             <thead>
               <tr className="bg-gray-100 border-b border-gray-200">
                 {Object.keys(items[0]).map((key) => (
-                  <th key={key} className="px-6 py-4 text-sm font-bold text-gray-700">{key}</th>
+                  <th key={key} className="px-2 py-1 text-xs font-bold text-gray-700">
+                    {key === 'lotto' ? 'Prod.Lot.' : key}
+                  </th>
                 ))}
-                <th className="px-6 py-4 text-sm font-bold text-gray-700 text-right">Azioni</th>
+                <th className="px-2 py-1 text-xs font-bold text-gray-700 text-right">Azioni</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
               {items.map((item, idx) => (
                 <tr key={idx} className="hover:bg-gray-50">
                   {Object.values(item).map((val: any, j) => (
-                    <td key={j} className="px-6 py-4 text-sm text-gray-700">{String(val)}</td>
+                    <td key={j} className="px-2 py-1 text-xs text-gray-700">{String(val)}</td>
                   ))}
-                  <td className="px-6 py-4 text-right">
+                  <td className="px-2 py-1 text-right">
                     <div className="flex justify-end gap-2">
                       <button 
                         onClick={() => router.push(`/items/${encodeURIComponent(item.item_id || item.id)}/movements`)}

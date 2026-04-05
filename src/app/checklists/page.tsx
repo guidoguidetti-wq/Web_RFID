@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Pencil, Trash2, Plus, X, Save, FileText } from 'lucide-react';
+import { Pencil, Trash2, Plus, X, Save, FileText, List } from 'lucide-react';
 import Link from 'next/link';
 
 interface Checklist {
@@ -11,6 +11,8 @@ interface Checklist {
   chk_zone: string;
   chk_notes: string;
   chk_creationdate: string;
+  n_products: number;
+  n_items: number;
 }
 
 interface Place { place_id: number; place_name: string; }
@@ -115,6 +117,8 @@ export default function ChecklistsPage() {
           onChange={e => setItem({ ...item, chk_creationdate: e.target.value })}
         />
       </td>
+      <td className="px-4 py-2 text-center text-sm text-gray-400">—</td>
+      <td className="px-4 py-2 text-center text-sm text-gray-400">—</td>
       <td className="px-4 py-2 text-right">
         <div className="flex justify-end gap-2">
           <button onClick={() => handleSave(item, isNew)} className="text-green-600 hover:text-green-800">
@@ -148,6 +152,8 @@ export default function ChecklistsPage() {
               <th className="px-4 py-3 text-sm font-semibold text-gray-600">Place</th>
               <th className="px-4 py-3 text-sm font-semibold text-gray-600">Note</th>
               <th className="px-4 py-3 text-sm font-semibold text-gray-600">Data Creazione</th>
+              <th className="px-4 py-3 text-sm font-semibold text-gray-600 text-center">N.Products</th>
+              <th className="px-4 py-3 text-sm font-semibold text-gray-600 text-center">N.Items</th>
               <th className="px-4 py-3 text-sm font-semibold text-gray-600 text-right">Azioni</th>
             </tr>
           </thead>
@@ -167,6 +173,8 @@ export default function ChecklistsPage() {
                     <td className="px-4 py-3 text-sm text-gray-700">{item.chk_place}</td>
                     <td className="px-4 py-3 text-sm text-gray-700">{item.chk_notes}</td>
                     <td className="px-4 py-3 text-sm text-gray-700">{formatDate(item.chk_creationdate)}</td>
+                    <td className="px-4 py-3 text-sm text-gray-700 text-center">{item.n_products ?? 0}</td>
+                    <td className="px-4 py-3 text-sm text-gray-700 text-center">{item.n_items ?? 0}</td>
                     <td className="px-4 py-3 text-right">
                       <div className="flex justify-end gap-3">
                         <Link
@@ -175,6 +183,13 @@ export default function ChecklistsPage() {
                           title="Dettagli prodotti"
                         >
                           <FileText size={18} />
+                        </Link>
+                        <Link
+                          href={`/checklists/${item.chk_id}/items`}
+                          className="inline-flex items-center text-teal-600 hover:text-teal-800"
+                          title="Gestione Items"
+                        >
+                          <List size={18} />
                         </Link>
                         <button
                           onClick={() => setEditingItem({ ...item, chk_creationdate: item.chk_creationdate?.split('T')[0] ?? '' })}

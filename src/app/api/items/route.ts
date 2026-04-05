@@ -17,7 +17,7 @@ export async function GET(req: NextRequest) {
 
     // Build filter conditions
     const filters: { [key: string]: string } = {};
-    const validColumns = ['item_id', 'item_product_id', 'date_creation', 'date_lastseen', 'place_last', 'zone_last', 'fld01', 'fld02', 'fld03', 'fldd01'];
+    const validColumns = ['item_id', 'item_product_id', 'date_creation', 'date_lastseen', 'place_last', 'zone_last', 'fld01', 'fld02', 'fld03', 'fldd01', 'lotto'];
 
     validColumns.forEach(col => {
       const filterValue = searchParams.get(`filter_${col}`);
@@ -33,7 +33,7 @@ export async function GET(req: NextRequest) {
 
     Object.keys(filters).forEach(col => {
       // For joined columns from Products table
-      if (['fld01', 'fld02', 'fld03', 'fldd01'].includes(col)) {
+      if (['fld01', 'fld02', 'fld03', 'fldd01', 'lotto'].includes(col)) {
         whereClauses.push(`p."${col}"::text ILIKE $${paramIndex}`);
       } else {
         whereClauses.push(`i."${col}"::text ILIKE $${paramIndex}`);
@@ -60,7 +60,7 @@ export async function GET(req: NextRequest) {
     queryParams.push(limit, offset);
     const sql = `
       SELECT i.*,
-        p.fld01, p.fld02, p.fld03, p.fldd01,
+        p.fld01, p.fld02, p.fld03, p.fldd01, p.lotto,
         CASE WHEN i.place_last IS NOT NULL AND pl.place_name IS NOT NULL
              THEN i.place_last || ' - ' || pl.place_name
              ELSE COALESCE(i.place_last, '') END as place_last_display,
@@ -97,19 +97,59 @@ export async function DELETE(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const id = searchParams.get('id');
+    const bulk = searchParams.get('bulk') === 'true';
+
+    if (bulk) {
+      // Bulk delete: build filter the same way as GET
+      const filters: { [key: string]: string } = {};
+      const validColumns = ['item_id', 'item_product_id', 'date_creation', 'date_lastseen', 'place_last', 'zone_last', 'fld01', 'fld02', 'fld03', 'fldd01', 'lotto'];
+      validColumns.forEach(col => {
+        const val = searchParams.get(`filter_${col}`);
+        if (val) filters[col] = val;
+      });
+
+      const whereClauses: string[] = [];
+      const queryParams: any[] = [];
+      let paramIndex = 1;
+      Object.keys(filters).forEach(col => {
+        if (['fld01', 'fld02', 'fld03', 'fldd01', 'lotto'].includes(col)) {
+          whereClauses.push(`p."${col}"::text ILIKE $${paramIndex}`);
+        } else {
+          whereClauses.push(`i."${col}"::text ILIKE $${paramIndex}`);
+        }
+        queryParams.push(`%${filters[col]}%`);
+        paramIndex++;
+      });
+
+      const whereSQL = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
+
+      // Get matching item IDs
+      const idResult = await client.query(
+        `SELECT i.item_id FROM "Items" i
+         LEFT JOIN "Products" p ON i.item_product_id = p.product_id
+         ${whereSQL}`,
+        queryParams
+      );
+      const ids = idResult.rows.map((r: any) => r.item_id);
+
+      if (ids.length === 0) return NextResponse.json({ success: true, deleted: 0 });
+
+      await client.query('BEGIN');
+      await client.query(`DELETE FROM "Movements" WHERE mov_item_id = ANY($1)`, [ids]);
+      await client.query(`DELETE FROM checklist_items WHERE chi_item_id = ANY($1)`, [ids]);
+      await client.query(`DELETE FROM "Items" WHERE item_id = ANY($1)`, [ids]);
+      await client.query('COMMIT');
+      return NextResponse.json({ success: true, deleted: ids.length });
+    }
 
     if (!id) {
       return NextResponse.json({ error: 'ID mancante' }, { status: 400 });
     }
 
     await client.query('BEGIN');
-    // Delete related movements first
-    // Assuming column is mov_item_id. If different, this will fail and I'll fix.
     await client.query('DELETE FROM "Movements" WHERE mov_item_id = $1', [id]);
-    
-    // Delete item
+    await client.query('DELETE FROM checklist_items WHERE chi_item_id = $1', [id]);
     await client.query('DELETE FROM "Items" WHERE item_id = $1', [id]);
-
     await client.query('COMMIT');
     return NextResponse.json({ success: true });
   } catch (error) {

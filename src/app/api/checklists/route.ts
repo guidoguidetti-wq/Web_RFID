@@ -6,15 +6,18 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const place = searchParams.get('place');
 
-    let sql = 'SELECT * FROM "checklist"';
+    let sql = `SELECT c.*,
+      (SELECT COUNT(*)::int FROM checklist_products WHERE ckp_chl_id = c.chk_id) AS n_products,
+      (SELECT COUNT(*)::int FROM checklist_items WHERE chi_chk_id = c.chk_id) AS n_items
+    FROM "checklist" c`;
     const params: any[] = [];
 
     if (place) {
-      sql += ' WHERE chk_place = $1';
+      sql += ' WHERE c.chk_place = $1';
       params.push(place);
     }
 
-    sql += ' ORDER BY chk_code ASC';
+    sql += ' ORDER BY c.chk_code ASC';
 
     const result = await query(sql, params);
     return NextResponse.json(result.rows);

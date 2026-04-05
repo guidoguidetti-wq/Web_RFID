@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Activity } from 'lucide-react';
+import { Activity, Trash2 } from 'lucide-react';
 
 export default function ItemsPage() {
   const router = useRouter();
@@ -56,6 +56,35 @@ export default function ItemsPage() {
     fetchItems(1, newFilters);
   };
 
+  const handleDeleteFiltered = async () => {
+    const activeFilters = Object.values(filters).filter(v => v);
+    const confirmMsg = activeFilters.length > 0
+      ? `Eliminare tutti i ${pagination.total} items corrispondenti al filtro corrente e tutti i record correlati?`
+      : `Eliminare TUTTI i ${pagination.total} items e tutti i record correlati? Operazione irreversibile!`;
+    if (!confirm(confirmMsg)) return;
+    try {
+      setLoading(true);
+      const params = new URLSearchParams({ bulk: 'true' });
+      Object.keys(filters).forEach(key => {
+        if (filters[key]) params.append(`filter_${key}`, filters[key]);
+      });
+      const res = await fetch(`/api/items?${params.toString()}`, { method: 'DELETE' });
+      if (res.ok) {
+        const data = await res.json();
+        alert(`Eliminati ${data.deleted} items.`);
+        fetchItems(1);
+      } else {
+        const err = await res.json();
+        alert(err.error || 'Errore eliminazione');
+      }
+    } catch (error) {
+      console.error('Delete filtered error', error);
+      alert('Errore di rete');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const getLabel = (key: string) => {
     const labelObj = labels.find(l => l.pr_fld === key);
     return labelObj ? (labelObj.pr_lab || labelObj.pr_des || key) : key;
@@ -72,6 +101,7 @@ export default function ItemsPage() {
     { key: 'fld01',           label: getLabel('fld01') },
     { key: 'fld02',           label: getLabel('fld02') },
     { key: 'fld03',           label: getLabel('fld03') },
+    { key: 'lotto',           label: 'Prod.Lot.' },
     { key: 'fldd01',          label: getLabel('fldd01') },
     { key: 'date_creation',   label: 'Data Creazione' },
     { key: 'date_lastseen',   label: 'Ultima Lettura' },
@@ -84,7 +114,8 @@ export default function ItemsPage() {
     item_product_id: 'min-w-[80px]',
     fld01:           'min-w-[90px]',
     fld02:           'min-w-[90px]',
-    fld03:           'min-w-[60px]',
+    fld03:           'min-w-[45px]',
+    lotto:           'min-w-[80px]',
     fldd01:          'min-w-[90px]',
     date_creation:   'min-w-[120px]',
     date_lastseen:   'min-w-[120px]',
@@ -164,8 +195,17 @@ export default function ItemsPage() {
           </div>
         )}
 
-        <div className="text-xs text-gray-600 whitespace-nowrap">
-          Totale: {pagination.total} items
+        <div className="flex items-center gap-3">
+          <div className="text-xs text-gray-600 whitespace-nowrap">
+            Totale: {pagination.total} items
+          </div>
+          <button
+            onClick={handleDeleteFiltered}
+            className="flex items-center gap-1 px-2 py-1 bg-red-600 text-white rounded hover:bg-red-700 transition text-xs whitespace-nowrap"
+            title="Elimina tutti gli items del filtro corrente"
+          >
+            <Trash2 size={12} /> Delete Filtered
+          </button>
         </div>
       </div>
 
