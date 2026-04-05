@@ -83,6 +83,7 @@ export default function ChecklistsPage() {
   // Inline edit cells — defined outside render loop to avoid focus issues
   const editCells = (item: any, setItem: (v: any) => void, isNew: boolean) => (
     <>
+      <td className="px-3 py-1 text-xs text-gray-400">{item.chk_id || '—'}</td>
       <td className="px-4 py-2">
         <input
           className="w-full p-1.5 border border-blue-300 rounded text-sm"
@@ -148,13 +149,14 @@ export default function ChecklistsPage() {
         <table className="w-full text-left border-collapse">
           <thead>
             <tr className="bg-gray-50">
-              <th className="px-4 py-3 text-sm font-semibold text-gray-600">Codice</th>
-              <th className="px-4 py-3 text-sm font-semibold text-gray-600">Place</th>
-              <th className="px-4 py-3 text-sm font-semibold text-gray-600">Note</th>
-              <th className="px-4 py-3 text-sm font-semibold text-gray-600">Data Creazione</th>
-              <th className="px-4 py-3 text-sm font-semibold text-gray-600 text-center">N.Products</th>
-              <th className="px-4 py-3 text-sm font-semibold text-gray-600 text-center">N.Items</th>
-              <th className="px-4 py-3 text-sm font-semibold text-gray-600 text-right">Azioni</th>
+              <th className="px-3 py-1 text-sm font-semibold text-gray-600">ID</th>
+              <th className="px-3 py-1 text-sm font-semibold text-gray-600">Codice</th>
+              <th className="px-3 py-1 text-sm font-semibold text-gray-600">Place</th>
+              <th className="px-3 py-1 text-sm font-semibold text-gray-600">Note</th>
+              <th className="px-3 py-1 text-sm font-semibold text-gray-600">Data Creazione</th>
+              <th className="px-3 py-1 text-sm font-semibold text-gray-600 text-center">N.Products</th>
+              <th className="px-3 py-1 text-sm font-semibold text-gray-600 text-center">N.Items</th>
+              <th className="px-3 py-1 text-sm font-semibold text-gray-600 text-right">Azioni</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
@@ -169,13 +171,14 @@ export default function ChecklistsPage() {
                   editCells(editingItem, setEditingItem, false)
                 ) : (
                   <>
-                    <td className="px-4 py-3 text-sm text-gray-700 font-medium">{item.chk_code}</td>
-                    <td className="px-4 py-3 text-sm text-gray-700">{item.chk_place}</td>
-                    <td className="px-4 py-3 text-sm text-gray-700">{item.chk_notes}</td>
-                    <td className="px-4 py-3 text-sm text-gray-700">{formatDate(item.chk_creationdate)}</td>
-                    <td className="px-4 py-3 text-sm text-gray-700 text-center">{item.n_products ?? 0}</td>
-                    <td className="px-4 py-3 text-sm text-gray-700 text-center">{item.n_items ?? 0}</td>
-                    <td className="px-4 py-3 text-right">
+                    <td className="px-3 py-1 text-xs text-gray-400 font-mono">{item.chk_id}</td>
+                    <td className="px-3 py-1 text-sm text-gray-700 font-medium">{item.chk_code}</td>
+                    <td className="px-3 py-1 text-sm text-gray-700">{item.chk_place}</td>
+                    <td className="px-3 py-1 text-sm text-gray-700">{item.chk_notes}</td>
+                    <td className="px-3 py-1 text-sm text-gray-700">{formatDate(item.chk_creationdate)}</td>
+                    <td className="px-3 py-1 text-sm text-gray-700 text-center">{item.n_products ?? 0}</td>
+                    <td className="px-3 py-1 text-sm text-gray-700 text-center">{item.n_items ?? 0}</td>
+                    <td className="px-3 py-1 text-right">
                       <div className="flex justify-end gap-3">
                         <Link
                           href={`/checklists/${item.chk_id}/products`}

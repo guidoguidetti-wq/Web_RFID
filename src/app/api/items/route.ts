@@ -136,7 +136,7 @@ export async function DELETE(req: NextRequest) {
 
       await client.query('BEGIN');
       await client.query(`DELETE FROM "Movements" WHERE mov_item_id = ANY($1)`, [ids]);
-      await client.query(`DELETE FROM checklist_items WHERE chi_item_id = ANY($1)`, [ids]);
+      await client.query(`DELETE FROM checklist_items WHERE ckp_epc_id = ANY($1)`, [ids]);
       await client.query(`DELETE FROM "Items" WHERE item_id = ANY($1)`, [ids]);
       await client.query('COMMIT');
       return NextResponse.json({ success: true, deleted: ids.length });
@@ -148,7 +148,7 @@ export async function DELETE(req: NextRequest) {
 
     await client.query('BEGIN');
     await client.query('DELETE FROM "Movements" WHERE mov_item_id = $1', [id]);
-    await client.query('DELETE FROM checklist_items WHERE chi_item_id = $1', [id]);
+    await client.query('DELETE FROM checklist_items WHERE ckp_epc_id = $1', [id]);
     await client.query('DELETE FROM "Items" WHERE item_id = $1', [id]);
     await client.query('COMMIT');
     return NextResponse.json({ success: true });

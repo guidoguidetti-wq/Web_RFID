@@ -16,7 +16,7 @@ export async function GET(req: NextRequest) {
       const result = await query(
         `SELECT c.*,
           (SELECT COUNT(*)::int FROM checklist_products WHERE ckp_chl_id = c.chk_id) AS n_products,
-          (SELECT COUNT(*)::int FROM checklist_items WHERE chi_chk_id = c.chk_id) AS n_items
+          (SELECT COUNT(*)::int FROM checklist_items WHERE ckp_chl_id = c.chk_id) AS n_items
          FROM "checklist" c${whereClause} ORDER BY c.chk_code ASC`,
         params
       );
