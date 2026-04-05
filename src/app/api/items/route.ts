@@ -17,7 +17,7 @@ export async function GET(req: NextRequest) {
 
     // Build filter conditions
     const filters: { [key: string]: string } = {};
-    const validColumns = ['item_id', 'item_product_id', 'date_creation', 'date_lastseen', 'place_last', 'zone_last', 'fld01', 'fld02', 'fld03', 'fldd01', 'lotto'];
+    const validColumns = ['item_id', 'item_product_id', 'date_creation', 'date_lastseen', 'place_last', 'zone_last', 'fld01', 'fld02', 'fld03', 'fldd01'];
 
     validColumns.forEach(col => {
       const filterValue = searchParams.get(`filter_${col}`);
@@ -33,7 +33,7 @@ export async function GET(req: NextRequest) {
 
     Object.keys(filters).forEach(col => {
       // For joined columns from Products table
-      if (['fld01', 'fld02', 'fld03', 'fldd01', 'lotto'].includes(col)) {
+      if (['fld01', 'fld02', 'fld03', 'fldd01'].includes(col)) {
         whereClauses.push(`p."${col}"::text ILIKE $${paramIndex}`);
       } else {
         whereClauses.push(`i."${col}"::text ILIKE $${paramIndex}`);
@@ -60,7 +60,7 @@ export async function GET(req: NextRequest) {
     queryParams.push(limit, offset);
     const sql = `
       SELECT i.*,
-        p.fld01, p.fld02, p.fld03, p.fldd01, p.lotto,
+        p.fld01, p.fld02, p.fld03, p.fldd01,
         CASE WHEN i.place_last IS NOT NULL AND pl.place_name IS NOT NULL
              THEN i.place_last || ' - ' || pl.place_name
              ELSE COALESCE(i.place_last, '') END as place_last_display,
@@ -102,7 +102,7 @@ export async function DELETE(req: NextRequest) {
     if (bulk) {
       // Bulk delete: build filter the same way as GET
       const filters: { [key: string]: string } = {};
-      const validColumns = ['item_id', 'item_product_id', 'date_creation', 'date_lastseen', 'place_last', 'zone_last', 'fld01', 'fld02', 'fld03', 'fldd01', 'lotto'];
+      const validColumns = ['item_id', 'item_product_id', 'date_creation', 'date_lastseen', 'place_last', 'zone_last', 'fld01', 'fld02', 'fld03', 'fldd01'];
       validColumns.forEach(col => {
         const val = searchParams.get(`filter_${col}`);
         if (val) filters[col] = val;
