@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db';
 
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const chkId = params.id;
+    const { id: chkId } = await params;
 
     // Get column info for the frontend
     const colsResult = await query(
@@ -26,9 +26,9 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   }
 }
 
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const chkId = params.id;
+    const { id: chkId } = await params;
     const body = await req.json();
 
     const keys = Object.keys(body).filter(k => k !== 'chi_id');
