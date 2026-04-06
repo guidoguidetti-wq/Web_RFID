@@ -23,7 +23,7 @@ export default function InventoriesPage() {
   // Close Modal State
   const [isCloseModalOpen, setIsCloseModalOpen] = useState(false);
   const [closeOptions, setCloseOptions] = useState({
-    create_movements: false,
+    create_movements: true,
     update_items: true
   });
   const [invToClose, setInvToClose] = useState<any>(null);
@@ -262,7 +262,7 @@ export default function InventoriesPage() {
     }
     setInvToClose(inv);
     setCloseOptions({
-        create_movements: false,
+        create_movements: true,
         update_items: true
     });
     setIsCloseModalOpen(true);
@@ -278,7 +278,8 @@ export default function InventoriesPage() {
          body: JSON.stringify({
             inv_id: invToClose.inv_id,
             create_movements: closeOptions.create_movements,
-            update_items: closeOptions.update_items
+            update_items: closeOptions.update_items,
+            mov_user: userName
          })
        });
 

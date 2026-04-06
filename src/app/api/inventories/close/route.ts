@@ -5,7 +5,7 @@ export async function POST(req: NextRequest) {
   const client = await pool.connect();
   try {
     const body = await req.json();
-    const { inv_id, create_movements, update_items } = body;
+    const { inv_id, create_movements, update_items, mov_user } = body;
 
     if (!inv_id) {
       return NextResponse.json({ error: 'ID Inventario mancante' }, { status: 400 });
@@ -29,24 +29,22 @@ export async function POST(req: NextRequest) {
 
     // Helper for inserting movements
     const insertMovements = async (conditionClause: string, destPlace: string, destZone: string) => {
-        // We join Items to get the *previous* location for the note
-        // Note: We use COALESCE to handle cases where item might not exist in Items table (though it should)
         const sql = `
-          INSERT INTO "Movements" 
+          INSERT INTO "Movements"
           (mov_epc, mov_dest_place, mov_dest_zone, mov_timestamp, mov_notes, mov_ref, mov_user)
-          SELECT 
+          SELECT
             ii.int_epc,
             $1, -- dest place
             $2, -- dest zone
             NOW(),
             $3 || ' From ' || COALESCE(i.place_last, 'N/A') || '/' || COALESCE(i.zone_last, 'N/A'),
-            $4, -- ref (inv_name)
-            'System' -- user (generic)
+            'INV - ' || $4,
+            $6 -- logged user
           FROM "inventory_items" ii
           LEFT JOIN "Items" i ON ii.int_epc = i.item_id
           WHERE ii.int_inv_id = $5 AND (${conditionClause})
         `;
-        await client.query(sql, [destPlace, destZone, inv.inv_note || '', inv.inv_name, inv_id]);
+        await client.query(sql, [destPlace, destZone, inv.inv_note || '', inv.inv_name, inv_id, mov_user || 'System']);
     };
 
     // Helper for updating items
@@ -77,12 +75,9 @@ export async function POST(req: NextRequest) {
     }
 
     // --- LOST ITEMS ---
-    // Dest: inv_mis_place, inv_mis_zone
+    // Dest: inv_mis_place, inv_mis_zone — solo aggiornamento posizione, nessun movimento
     const lostCondition = "ii.inv_lost = true";
 
-    if (create_movements) {
-         await insertMovements(lostCondition, inv.inv_mis_place, inv.inv_mis_zone);
-    }
     if (update_items) {
          await updateItemsTable(lostCondition, inv.inv_mis_place, inv.inv_mis_zone);
     }
