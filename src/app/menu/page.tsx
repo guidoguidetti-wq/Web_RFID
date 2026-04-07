@@ -13,6 +13,7 @@ import {
   ScanLine,
   ShieldCheck,
   Wrench,
+  Network,
 } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
@@ -30,6 +31,7 @@ const menuItems = [
   { name: 'Letture HID', icon: ScanLine, href: '/hid-reads', color: 'from-rose-500 to-rose-600' },
   { name: 'Landing Bett', icon: ShieldCheck, href: '/bett', color: 'from-sky-500 to-blue-600' },
   { name: 'Work Orders', icon: Wrench, href: '/work-orders', color: 'from-violet-500 to-purple-600' },
+  { name: 'Interfacce', icon: Network, href: '/interfacce', color: 'from-slate-500 to-slate-600' },
 ];
 
 export default function MenuPage() {

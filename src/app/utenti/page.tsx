@@ -3,7 +3,7 @@
 import ManagementTable from '@/components/ManagementTable';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Settings } from 'lucide-react';
+import { Settings, List } from 'lucide-react';
 
 interface Column {
   key: string;
@@ -68,6 +68,15 @@ export default function UtentiPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <div className="px-6 pt-6 flex justify-end">
+        <button
+          onClick={() => router.push('/funzioni')}
+          className="flex items-center gap-2 bg-gray-700 text-white px-4 py-2 rounded-lg hover:bg-gray-800 transition-colors text-sm"
+        >
+          <List size={16} />
+          Gestione Funzioni
+        </button>
+      </div>
       <ManagementTable
         title="Gestione Utenti"
         columns={columns}

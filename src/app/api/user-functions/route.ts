@@ -1,6 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db';
 
+async function syncUserFunctions(usrId: string) {
+  await query(
+    `INSERT INTO users_functions (usr_f_usr_id, usr_f_fun_id, usr_f_prog, usr_f_label, usr_f_enabled)
+     SELECT $1, fun_id, 0, fun_label, false
+     FROM functions
+     WHERE fun_id NOT IN (
+       SELECT usr_f_fun_id FROM users_functions WHERE usr_f_usr_id = $1
+     )`,
+    [usrId]
+  );
+}
+
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
@@ -8,6 +20,7 @@ export async function GET(req: NextRequest) {
     if (!usrId) {
       return NextResponse.json({ error: 'usr_id richiesto' }, { status: 400 });
     }
+    await syncUserFunctions(usrId);
     const result = await query(
       'SELECT * FROM users_functions WHERE usr_f_usr_id = $1 ORDER BY usr_f_fun_id ASC',
       [usrId]
