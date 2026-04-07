@@ -9,9 +9,6 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@capacitor/android": "^8.3.0",
-    "@capacitor/cli": "^8.3.0",
-    "@capacitor/core": "^8.3.0",
     "@vercel/blob": "^2.2.0",
     "basic-ftp": "^5.2.0",
     "clsx": "latest",
