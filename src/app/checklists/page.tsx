@@ -99,7 +99,7 @@ export default function ChecklistsPage() {
           onChange={e => setItem({ ...item, chk_place: e.target.value })}
         >
           <option value="">-- Place --</option>
-          {places.map(p => <option key={p.place_id} value={p.place_name}>{p.place_id}</option>)}
+          {places.map(p => <option key={p.place_id} value={p.place_id}>{p.place_name}</option>)}
         </select>
       </td>
       <td className="px-4 py-2">
@@ -173,7 +173,7 @@ export default function ChecklistsPage() {
                   <>
                     <td className="px-3 py-1 text-xs text-gray-400 font-mono">{item.chk_id}</td>
                     <td className="px-3 py-1 text-sm text-gray-700 font-medium">{item.chk_code}</td>
-                    <td className="px-3 py-1 text-sm text-gray-700">{item.chk_place}</td>
+                    <td className="px-3 py-1 text-sm text-gray-700">{places.find(p => p.place_id === item.chk_place)?.place_name ?? item.chk_place}</td>
                     <td className="px-3 py-1 text-sm text-gray-700">{item.chk_notes}</td>
                     <td className="px-3 py-1 text-sm text-gray-700">{formatDate(item.chk_creationdate)}</td>
                     <td className="px-3 py-1 text-sm text-gray-700 text-center">{item.n_products ?? 0}</td>
