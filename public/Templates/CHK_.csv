@@ -1,1 +1,13 @@
 ﻿chk_code;chk_notes;ckp_product_id;ckp_qta;ckp_epc
+
+Note per la Compilazione (Eliminare dal file di Import)
+
+chk_code = codice della checklist, univoco (numero spedizione, DDT, ordine)
+chk_notes = descrizione checklist(opzionale, chiarisce di cosa si tratta o data o altro riferimento)
+ckp_product_id = codice prodotto (deve già essere a sistema, altrimenti errore di import)
+ckp_qta = quantità in caso di checklist per SKU, lasciare vuoto o = 1 per checklist per EPC
+ckp_epc = codice EPC matricolare, se non già a sistema viene creato
+
+Campi Opzionali (Se product_id non esiste a sistema verranno utilizzati per generare nuovo prodotto, Se product_id esiste a sistema verranno ignorati)
+
+nome del file: prefisso CHK_ seguito da timestamp.csv

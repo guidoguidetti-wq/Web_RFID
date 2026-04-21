@@ -19,6 +19,11 @@ interface WorkOrder {
   wo_status: string;
   wo_priority: string;
   wo_notes: string | null;
+  wo_assigned_to: string | null;
+  wo_item_id: number | null;
+  wo_due_date: string | null;
+  wo_prefix: string | null;
+  wo_template: boolean;
   wo_created_at: string;
   wo_updated_at: string;
   attach_count: number;
@@ -64,6 +69,8 @@ const STATUS_ICON: Record<string, React.ReactNode> = {
 const EMPTY_FORM = {
   wo_number: '', wo_title: '', wo_description: '',
   wo_status: 'APERTO', wo_priority: 'NORMALE', wo_notes: '',
+  wo_assigned_to: '', wo_item_id: '', wo_due_date: '',
+  wo_prefix: '', wo_template: false,
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -143,12 +150,17 @@ export default function WorkOrdersPage() {
   const openEdit = (wo: WorkOrder) => {
     setEditing(wo);
     setForm({
-      wo_number:     wo.wo_number,
-      wo_title:      wo.wo_title,
+      wo_number:      wo.wo_number,
+      wo_title:       wo.wo_title,
       wo_description: wo.wo_description ?? '',
-      wo_status:     wo.wo_status,
-      wo_priority:   wo.wo_priority,
-      wo_notes:      wo.wo_notes ?? '',
+      wo_status:      wo.wo_status,
+      wo_priority:    wo.wo_priority,
+      wo_notes:       wo.wo_notes ?? '',
+      wo_assigned_to: wo.wo_assigned_to ?? '',
+      wo_item_id:     wo.wo_item_id != null ? String(wo.wo_item_id) : '',
+      wo_due_date:    wo.wo_due_date ? wo.wo_due_date.slice(0, 10) : '',
+      wo_prefix:      wo.wo_prefix ?? '',
+      wo_template:    wo.wo_template ?? false,
     });
     setFormError('');
     setModalOpen(true);
@@ -163,7 +175,13 @@ export default function WorkOrdersPage() {
     setFormError('');
     try {
       const method = editing ? 'PUT' : 'POST';
-      const body   = editing ? { wo_id: editing.wo_id, ...form } : form;
+      const body   = editing
+        ? { wo_id: editing.wo_id, ...form,
+            wo_item_id: form.wo_item_id ? Number(form.wo_item_id) : null,
+            wo_due_date: form.wo_due_date || null }
+        : { ...form,
+            wo_item_id: form.wo_item_id ? Number(form.wo_item_id) : null,
+            wo_due_date: form.wo_due_date || null };
       const res    = await fetch('/api/work-orders', {
         method,
         headers: { 'Content-Type': 'application/json' },
@@ -467,6 +485,48 @@ export default function WorkOrdersPage() {
                   rows={2}
                   className="border border-gray-300 rounded-lg px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-400"
                   placeholder="Note aggiuntive…" />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-semibold text-gray-600">Assegnato a</label>
+                  <input value={form.wo_assigned_to}
+                    onChange={e => setForm(f => ({ ...f, wo_assigned_to: e.target.value }))}
+                    className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                    placeholder="Nome / ID operatore" />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-semibold text-gray-600">Scadenza</label>
+                  <input type="date" value={form.wo_due_date}
+                    onChange={e => setForm(f => ({ ...f, wo_due_date: e.target.value }))}
+                    className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-semibold text-gray-600">Item ID</label>
+                  <input type="number" value={form.wo_item_id}
+                    onChange={e => setForm(f => ({ ...f, wo_item_id: e.target.value }))}
+                    className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                    placeholder="ID item RFID" />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-semibold text-gray-600">Prefisso (wo_prefix)</label>
+                  <input value={form.wo_prefix}
+                    onChange={e => setForm(f => ({ ...f, wo_prefix: e.target.value }))}
+                    className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                    placeholder="Es. MNT-, REP-" />
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <input type="checkbox" id="wo_template" checked={form.wo_template}
+                  onChange={e => setForm(f => ({ ...f, wo_template: e.target.checked }))}
+                  className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-400 cursor-pointer" />
+                <label htmlFor="wo_template" className="text-xs font-semibold text-gray-600 cursor-pointer select-none">
+                  Template (riutilizzabile come modello)
+                </label>
               </div>
             </div>
 

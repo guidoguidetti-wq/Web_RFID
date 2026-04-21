@@ -1,1 +1,13 @@
 ﻿product_id;fld01;fld02;fld03;fld04;fld05;fld06;fld07;fld08;fld09;fld10;fldd01;fldd02;fldd03;fldd04;fldd05
+
+Note per la Compilazione (Eliminare dal file di Import)
+
+product_id = codice univoco SKU (es: barcode EAN)
+fdl01->fld10 = campi di definizione del prodotto, come definito nella tabella Products_labels (Accedi dalla Pagina Prodotti dell'applicazione)
+fldd01->fldd05 = campi descrittivi del prodotto, come definito nella tabella Products_labels
+
+nome del file: prefisso PRO_ seguito da timestamp.csv
+
+
+
+

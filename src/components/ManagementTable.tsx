@@ -142,9 +142,12 @@ export default function ManagementTable({ title, columns, apiEndpoint, extraActi
                 </td>
               </tr>
             )}
-            {data.map((item) => (
-              <tr key={item[columns.find(c => c.isId)?.key || 'id']} className="hover:bg-gray-50 transition-colors">
-                {editingItem && editingItem[columns.find(c => c.isId)?.key || 'id'] === item[columns.find(c => c.isId)?.key || 'id'] ? (
+            {data.map((item, idx) => {
+              const idKey = columns.find(c => c.isId)?.key ?? 'id';
+              const idVal = item[idKey] ?? idx;
+              return (
+              <tr key={idVal} className="hover:bg-gray-50 transition-colors">
+                {editingItem && editingItem[idKey] === item[idKey] ? (
                   <>
                     {columns.map((col) => (
                       <td key={col.key} className="px-6 py-4">
@@ -208,7 +211,7 @@ export default function ManagementTable({ title, columns, apiEndpoint, extraActi
                           <Pencil size={18} />
                         </button>
                         <button
-                          onClick={() => handleDelete(item[columns.find(c => c.isId)?.key || 'id'])}
+                          onClick={() => handleDelete(idVal)}
                           className="text-red-600 hover:text-red-800"
                         >
                           <Trash2 size={18} />
@@ -218,7 +221,8 @@ export default function ManagementTable({ title, columns, apiEndpoint, extraActi
                   </>
                 )}
               </tr>
-            ))}
+              );
+            })}
           </tbody>
         </table>
         {loading && <div className="p-10 text-center text-gray-500">Caricamento in corso...</div>}

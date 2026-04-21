@@ -94,7 +94,8 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const { wo_number, wo_title, wo_description, wo_status, wo_priority,
-            wo_item_id, wo_assigned_to, wo_due_date, wo_notes } = body;
+            wo_item_id, wo_assigned_to, wo_due_date, wo_notes,
+            wo_prefix, wo_template } = body;
 
     if (!wo_number || !wo_title) {
       return NextResponse.json({ error: 'Numero e titolo obbligatori' }, { status: 400 });
@@ -103,14 +104,16 @@ export async function POST(req: NextRequest) {
     const res = await query(
       `INSERT INTO work_orders
          (wo_number, wo_title, wo_description, wo_status, wo_priority,
-          wo_item_id, wo_assigned_to, wo_due_date, wo_notes)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
+          wo_item_id, wo_assigned_to, wo_due_date, wo_notes,
+          wo_prefix, wo_template)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
        RETURNING *`,
       [
         wo_number, wo_title, wo_description ?? null,
         wo_status ?? 'APERTO', wo_priority ?? 'NORMALE',
         wo_item_id || null, wo_assigned_to || null,
         wo_due_date || null, wo_notes || null,
+        wo_prefix || null, wo_template ?? false,
       ]
     );
     return NextResponse.json(res.rows[0], { status: 201 });
@@ -134,7 +137,8 @@ export async function PUT(req: NextRequest) {
     }
 
     const allowed = ['wo_number','wo_title','wo_description','wo_status','wo_priority',
-                     'wo_item_id','wo_assigned_to','wo_due_date','wo_notes'];
+                     'wo_item_id','wo_assigned_to','wo_due_date','wo_notes',
+                     'wo_prefix','wo_template'];
     const keys = Object.keys(fields).filter(k => allowed.includes(k));
 
     if (keys.length === 0) {

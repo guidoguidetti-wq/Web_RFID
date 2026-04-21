@@ -1,10 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Plus } from 'lucide-react';
+import { Plus, Tag } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import ProductGrid from '@/components/ProductGrid';
 
 export default function ProductsPage() {
+  const router = useRouter();
   const [products, setProducts] = useState([]);
   const [labels, setLabels] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -149,13 +151,21 @@ export default function ProductsPage() {
           </div>
         )}
 
-        {/* Right: Add Button */}
-        <button
-          onClick={() => setIsAddModalOpen(true)}
-          className="flex items-center gap-2 bg-blue-600 text-white px-3 py-1.5 rounded-lg hover:bg-blue-700 transition-colors text-sm whitespace-nowrap"
-        >
-          <Plus size={16} /> Aggiungi Prodotto
-        </button>
+        {/* Right: Buttons */}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => router.push('/products/labels')}
+            className="flex items-center gap-2 bg-gray-100 text-gray-700 border border-gray-300 px-3 py-1.5 rounded-lg hover:bg-gray-200 transition-colors text-sm whitespace-nowrap"
+          >
+            <Tag size={16} /> Etichette
+          </button>
+          <button
+            onClick={() => setIsAddModalOpen(true)}
+            className="flex items-center gap-2 bg-blue-600 text-white px-3 py-1.5 rounded-lg hover:bg-blue-700 transition-colors text-sm whitespace-nowrap"
+          >
+            <Plus size={16} /> Aggiungi Prodotto
+          </button>
+        </div>
       </div>
       <ProductGrid
         products={products}
